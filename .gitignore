@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+target_app/main.backup.py
+.streamlit/secrets.toml
+venv/
+.venv/
