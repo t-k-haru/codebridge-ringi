@@ -1,16 +1,16 @@
+# -*- coding: utf-8 -*-
 """
-メインエージェントパイプライン。
-指示 → コード生成 → サンドボックス実行 → 自己デバッグ → レポート生成
+メインエージェントパイプライン。トークン数とコストも記録する。
 """
 from dataclasses import dataclass, field
 from typing import Optional
 from core.azure_client import (
-    generate_code, fix_code, generate_report, extract_code_block
+    generate_code, fix_code, generate_report, extract_code_block,
+    get_last_token_usage,
 )
 from core.sandbox import execute_code, read_target_code
 
-MAX_DEBUG_ITERATIONS = 3
-
+MAX_DEBUG = 3
 
 @dataclass
 class TaskResult:
@@ -23,77 +23,58 @@ class TaskResult:
     iterations: int
     success: bool
     changed_lines: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
+    _priority: str = "mid"
+    _eng_comment: str = ""
 
     def __post_init__(self):
         if self.changed_lines == 0:
-            self.changed_lines = _count_changed_lines(
-                self.original_code, self.new_code
+            import difflib
+            diff = list(difflib.unified_diff(
+                self.original_code.splitlines(),
+                self.new_code.splitlines(), lineterm="",
+            ))
+            self.changed_lines = sum(
+                1 for l in diff if l.startswith(("+","-")) and not l.startswith(("+++","---"))
             )
 
-
 def run_pipeline(instruction: str, base_code: Optional[str] = None) -> TaskResult:
-    """
-    メインパイプライン実行。
-    base_code が None の場合は target_app/main.py を読む。
-    """
-    original_code = base_code if base_code else read_target_code()
+    original = base_code if base_code else read_target_code()
+    raw = generate_code(instruction, original)
+    current = extract_code_block(raw)
+    tok_in, tok_out = get_last_token_usage()
 
-    # ── Step 1: 初回コード生成 ──────────────────────────
-    raw_response = generate_code(instruction, original_code)
-    current_code = extract_code_block(raw_response)
-
-    # ── Step 2: 自己デバッグループ ──────────────────────
-    iterations = 0
-    last_output = ""
-    last_error = ""
-
-    for i in range(MAX_DEBUG_ITERATIONS):
-        iterations = i + 1
-        output, error = execute_code(current_code)
-        last_output = output
-        last_error = error
-
-        if not error:
-            # テスト成功
+    last_out = last_err = ""
+    for i in range(MAX_DEBUG):
+        out, err = execute_code(current)
+        last_out, last_err = out, err
+        if not err:
             break
+        if i < MAX_DEBUG - 1:
+            raw2 = fix_code(current, err, instruction)
+            current = extract_code_block(raw2)
+            ti2, to2 = get_last_token_usage()
+            tok_in += ti2; tok_out += to2
 
-        if i < MAX_DEBUG_ITERATIONS - 1:
-            # エラーを渡して再生成
-            raw_fix = fix_code(current_code, error, instruction)
-            current_code = extract_code_block(raw_fix)
-        # 最終イテレーションでもエラーなら諦める
+    raw_rep = generate_report(instruction, original, current, last_out, last_err, i+1)
+    ti3, to3 = get_last_token_usage()
+    tok_in += ti3; tok_out += to3
 
-    success = not bool(last_error)
-
-    # ── Step 3: レポート生成 ────────────────────────────
-    report = generate_report(
-        instruction=instruction,
-        original=original_code,
-        new_code=current_code,
-        test_output=last_output,
-        test_error=last_error,
-        iterations=iterations,
-    )
+    from core.auth import estimate_cost
+    cost = estimate_cost(tok_in, tok_out)
 
     return TaskResult(
         instruction=instruction,
-        original_code=original_code,
-        new_code=current_code,
-        test_output=last_output,
-        test_error=last_error,
-        report=report,
-        iterations=iterations,
-        success=success,
+        original_code=original,
+        new_code=current,
+        test_output=last_out,
+        test_error=last_err,
+        report=raw_rep,
+        iterations=i+1,
+        success=not bool(last_err),
+        input_tokens=tok_in,
+        output_tokens=tok_out,
+        cost_usd=cost,
     )
-
-
-def _count_changed_lines(original: str, new: str) -> int:
-    """変更・追加・削除された行数を数える。"""
-    import difflib
-    diff = list(difflib.unified_diff(
-        original.splitlines(),
-        new.splitlines(),
-        lineterm="",
-    ))
-    return sum(1 for line in diff if line.startswith(("+", "-"))
-               and not line.startswith(("+++", "---")))
