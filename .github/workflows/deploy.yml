@@ -13,9 +13,24 @@ jobs:
       - name: コードをチェックアウト
         uses: actions/checkout@v4
 
-      - name: Azureにデプロイ
-        uses: azure/webapps-deploy@v2
+      - name: Azureにログイン
+        uses: azure/login@v2
         with:
-          app-name: codebridge-t-k-haru
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-          package: .
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ZIPを作成してデプロイ
+        run: |
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".env" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x "*.zip" \
+            -x ".DS_Store" \
+            -x "webapp_logs/*"
+          az webapp deploy \
+            --name codebridge-t-k-haru \
+            --resource-group codebridge-rg \
+            --src-path deploy.zip \
+            --type zip \
+            --async true
