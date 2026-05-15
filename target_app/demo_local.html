@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift OS — 汎用デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+ --bg: #f5f4f0;
+ --surface: #ffffff;
+ --surface2: #f0ede8;
+ --border: #e2ddd6;
+ --text: #1a1814;
+ --text2: #6b6560;
+ --text3: #9e9890;
+ --accent: #2c5f2e;
+ --accent-light: #eaf2ea;
+ --accent2: #c8873a;
+ --accent2-light: #fdf3e7;
+ --danger: #c0392b;
+ --danger-light: #fdf0ee;
+ --blue: #185FA5;
+ --radius: 10px;
+ --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+/* DEMO BANNER */
+.demo-banner {
+ position: sticky;
+ top: 0;
+ z-index: 999;
+ background: rgba(10,10,10,.93);
+ backdrop-filter: blur(12px);
+ -webkit-backdrop-filter: blur(12px);
+ border-bottom: 1px solid rgba(255,255,255,.1);
+ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+.dcb-inner {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ padding: 0 16px;
+ height: 44px;
+ max-width: 1200px;
+ margin: 0 auto;
+}
+.dcb-back {
+ display: inline-flex;
+ align-items: center;
+ gap: 4px;
+ color: rgba(255,255,255,.5);
+ text-decoration: none;
+ font-size: 12px;
+ white-space: nowrap;
+ transition: color .15s;
+ flex-shrink: 0;
+}
+.dcb-back:hover { color: #fff; }
+.dcb-back { background: none; border: none; padding: 0; font-family: inherit; cursor: pointer; }
+.dcb-back-sub { font-size: 11px; opacity: .7; }
+@media (max-width: 600px) { .dcb-back-sub { display: none; } }
+.dcb-badge {
+ background: rgba(255,255,255,.12);
+ color: rgba(255,255,255,.55);
+ font-size: 10px;
+ font-weight: 700;
+ padding: 2px 8px;
+ border-radius: 999px;
+ letter-spacing: .5px;
+ flex-shrink: 0;
+}
+.dcb-actions {
+ display: flex;
+ gap: 8px;
+ margin-left: auto;
+ align-items: center;
+ flex-shrink: 0;
+}
+.dcb-btn {
+ display: inline-flex;
+ align-items: center;
+ padding: 6px 16px;
+ border-radius: 999px;
+ font-size: 12px;
+ font-weight: 700;
+ text-decoration: none;
+ white-space: nowrap;
+ transition: background .15s, border-color .15s, color .15s;
+}
+.dcb-btn-ghost {
+ color: rgba(255,255,255,.75);
+ border: 1px solid rgba(255,255,255,.25);
+ background: transparent;
+}
+.dcb-btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,.6); }
+.dcb-btn-primary { background: #fff; color: #000; border: 1px solid #fff; }
+.dcb-btn-primary:hover { background: #ddd; }
+@media (max-width: 600px) {
+ .dcb-inner { padding: 0 12px; gap: 8px; }
+ .dcb-badge { display: none; }
+}
+
+/* HEADER */
+.header {
+ background: var(--surface);
+ border-bottom: 1px solid var(--border);
+ padding: 0 16px;
+ display: flex; align-items: center; gap: 10px;
+ height: 52px; position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 16px; font-weight: 700; letter-spacing: -.3px; color: var(--accent); white-space: nowrap; }
+.logo span { color: var(--text3); font-weight: 400; font-size: 12px; margin-left: 6px; }
+.view-toggle {
+ margin-left: auto;
+ display: flex; gap: 4px;
+ background: var(--surface2);
+ border-radius: 8px;
+ padding: 3px;
+ flex-shrink: 0;
+}
+.view-btn {
+ padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+ cursor: pointer; border: none; background: transparent; color: var(--text2);
+ font-family: inherit; transition: all .15s; white-space: nowrap;
+}
+.view-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+
+/* TABS */
+.tabs {
+ background: var(--surface);
+ border-bottom: 1px solid var(--border);
+ padding: 0 16px;
+ display: flex; gap: 0;
+ overflow-x: auto;
+ scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+ padding: 12px 14px; font-size: 13px; font-weight: 500; color: var(--text2);
+ border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+ transition: color .15s, border-color .15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* MAIN */
+.main { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+.panel { display: none; }
+.panel.active { display: block; }
+.view-admin .emp-only { display: none !important; }
+.view-emp .admin-only { display: none !important; }
+
+/* CARDS */
+.card {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ box-shadow: var(--shadow);
+ overflow: hidden;
+ min-width: 0;
+}
+.card-header {
+ padding: 14px 16px;
+ border-bottom: 1px solid var(--border);
+ display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.card-title { font-size: 13.5px; font-weight: 600; }
+.card-body { padding: 16px; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 680px) { .grid-2, .grid-3 { grid-template-columns: minmax(0,1fr); } }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+.kpi {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ padding: 14px 16px;
+ box-shadow: var(--shadow);
+}
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.kpi-value { font-size: 26px; font-weight: 700; line-height: 1; font-family: 'DM Mono', monospace; }
+.kpi-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.kpi.green .kpi-value { color: var(--accent); }
+.kpi.amber .kpi-value { color: var(--accent2); }
+.kpi.red .kpi-value { color: var(--danger); }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--surface2); color: var(--text2); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.badge-green { background: var(--accent-light); color: var(--accent); }
+.badge-amber { background: var(--accent2-light); color: var(--accent2); }
+.badge-red { background: var(--danger-light); color: var(--danger); }
+.badge-gray { background: var(--surface2); color: var(--text2); }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+
+/* SHIFT CELLS */
+.shift-grid { display: grid; grid-template-columns: 100px repeat(7,1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: 12px; background: var(--surface); min-width: 500px; }
+.sg-head { background: var(--surface2); padding: 9px 6px; font-weight: 600; font-size: 11px; color: var(--text2); text-align: center; border-bottom: 1px solid var(--border); }
+.sg-head:first-child { text-align: left; padding-left: 12px; }
+.sg-name { padding: 9px 12px; font-weight: 500; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.sg-cell { padding: 7px 4px; text-align: center; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
+.shift-pill { display: inline-block; padding: 3px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.sp-early { background: #dbeafe; color: #1e40af; }
+.sp-late { background: #fef3c7; color: #92400e; }
+.sp-full { background: #d1fae5; color: #065f46; }
+.sp-off { background: var(--surface2); color: var(--text3); }
+
+/* FORM */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.form-control {
+ width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+ border-radius: 7px; font-size: 14px; font-family: inherit;
+ background: var(--surface); color: var(--text);
+ transition: border-color .15s, box-shadow .15s;
+ -webkit-appearance: none;
+}
+.form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(44,95,46,.12); }
+.radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-pill { padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; user-select: none; }
+.radio-pill:hover { border-color: var(--accent); color: var(--accent); }
+.radio-pill.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; border: none; transition: all .15s; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #245026; }
+.btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--text); }
+.btn-sm { padding: 6px 11px; font-size: 12px; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-block { width: 100%; justify-content: center; }
+
+/* AVATAR */
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+/* MISC */
+.section-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.mb-14 { margin-bottom: 14px; }
+.mb-20 { margin-bottom: 20px; }
+.text-muted { color: var(--text2); font-size: 13px; }
+.flex { display: flex; align-items: center; }
+.toast {
+ position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+ background: var(--text); color: #fff; padding: 11px 22px; border-radius: 8px;
+ font-size: 13px; font-weight: 500; z-index: 999;
+ transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+ pointer-events: none; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* TIMELINE */
+.timeline { display: flex; flex-direction: column; }
+.tl-item { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.tl-item:last-child { border-bottom: none; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); margin-top: 5px; flex-shrink: 0; }
+.tl-dot.green { background: var(--accent); }
+.tl-dot.amber { background: var(--accent2); }
+.tl-content { flex: 1; }
+.tl-action { font-size: 13px; font-weight: 500; }
+.tl-time { font-size: 12px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+/* SETTINGS */
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.setting-row:last-child { border-bottom: none; }
+.setting-info { flex: 1; }
+.setting-label { font-size: 13.5px; font-weight: 600; }
+.setting-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.toggle { width: 42px; height: 23px; background: var(--border); border-radius: 12px; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.toggle.on { background: var(--accent); }
+.toggle::after { content: ''; position: absolute; width: 17px; height: 17px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.toggle.on::after { transform: translateX(19px); }
+
+/* TIMECARD */
+.punch-card {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ padding: 24px 20px;
+ text-align: center;
+ box-shadow: var(--shadow);
+}
+.punch-time { font-family: 'DM Mono', monospace; font-size: 40px; font-weight: 500; color: var(--text); margin: 8px 0 4px; }
+.punch-date { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+.punch-status { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; }
+.punch-status.out { background: var(--surface2); color: var(--text2); }
+.punch-status.in { background: var(--accent-light); color: var(--accent); }
+.punch-status.break { background: #dbeafe; color: #1e40af; }
+.punch-btn { font-size: 15px; padding: 13px 30px; border-radius: 999px; }
+.punch-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-break { background: #dbeafe; color: #1e40af; border: 1px solid rgba(30,64,175,.2); }
+
+/* EMPLOYEE CARD */
+.emp-info-card {
+ background: linear-gradient(135deg, var(--accent) 0%, #1d4520 100%);
+ border-radius: var(--radius);
+ padding: 20px;
+ color: #fff;
+ margin-bottom: 14px;
+}
+.emp-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.emp-meta { font-size: 13px; opacity: .8; }
+.emp-wage { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 700; margin-top: 12px; }
+.emp-wage-label { font-size: 12px; opacity: .7; }
+
+@media (max-width: 480px) {
+ .header { padding: 0 12px; }
+ .logo span { display: none; }
+ .main { padding: 14px 12px; }
+ .card-body { padding: 14px 12px; }
+ .card-header { padding: 12px 12px; }
+ .punch-time { font-size: 32px; }
+}
+
+
+/* ===== モバイルレスポンシブ ===== */
+@media (max-width: 768px) {
+ .header { height: 48px; padding: 0 12px; }
+ .logo { font-size: 13px; }
+ .view-toggle { padding: 2px; }
+ .view-btn { padding: 4px 8px; font-size: 11px; }
+ .tabs { padding: 0 8px; }
+ .tab { padding: 10px 10px; font-size: 12px; }
+ .main { padding: 14px 12px; }
+ .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; margin-bottom: 14px; }
+ .kpi { padding: 10px 12px; }
+ .kpi-value { font-size: 20px; }
+ .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+ .card-header { padding: 10px 12px; flex-wrap: wrap; }
+ .card-body { padding: 10px 12px; }
+ table { font-size: 12px; }
+ th { padding: 7px 8px; font-size: 9px; }
+ td { padding: 8px; }
+ .btn { padding: 6px 12px; font-size: 11px; }
+ .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 480px) {
+ .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+ .kpi-value { font-size: 18px; }
+ .dcb-back-sub { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+ <div class="dcb-inner">
+ <button onclick="dcbBack()" class="dcb-back">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+ stroke="currentColor" stroke-width="2.5"
+ stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <polyline points="15 18 9 12 15 6"/>
+ </svg>
+ <span class="dcb-back-label">戻る<span class="dcb-back-sub">　無料相談で実際にお試しいただけます</span></span>
+ </button>
+ <span class="dcb-badge">デモ版</span>
+ <div class="dcb-actions">
+ <button onclick="slpOpenConsult()" class="dcb-btn dcb-btn-ghost" style="cursor:pointer;">無料試用</button>
+ <a href="https://buy.stripe.com/14A5kC6dc7z77r0etTafS0Z" class="dcb-btn dcb-btn-primary"
+ target="_blank" rel="noopener">申し込む</a>
+ </div>
+ </div>
+</div>
+
+<header class="header">
+ <div class="logo">Shift OS <span>シフト管理システム</span></div>
+ <div class="view-toggle">
+ <button class="view-btn active" id="btn-admin" onclick="switchView('admin')">管理者</button>
+ <button class="view-btn" id="btn-emp" onclick="switchView('emp')">従業員</button>
+ </div>
+</header>
+
+<!-- 管理者タブ -->
+<nav class="tabs admin-only" id="admin-tabs">
+ <div class="tab active" onclick="switchTab('admin')">ダッシュボード</div>
+ <div class="tab" onclick="switchTab('approval')">承認・確定</div>
+ <div class="tab" onclick="switchTab('timecard-admin')">タイムカード</div>
+ <div class="tab" onclick="switchTab('settings')">設定</div>
+</nav>
+
+<!-- 従業員タブ -->
+<nav class="tabs emp-only" id="emp-tabs" style="display:none;">
+ <div class="tab active" onclick="switchEmpTab('emp-home')">マイページ</div>
+ <div class="tab" onclick="switchEmpTab('emp-request')">シフト申請</div>
+ <div class="tab" onclick="switchEmpTab('emp-timecard')">タイムカード</div>
+</nav>
+
+<main class="main">
+
+<!-- ========== 管理者: ダッシュボード ========== -->
+<div class="panel admin-panel active" id="panel-admin">
+ <div class="kpi-grid">
+ <div class="kpi green">
+ <div class="kpi-label">今月の申請</div>
+ <div class="kpi-value">42</div>
+ <div class="kpi-sub">うち確定 36件</div>
+ </div>
+ <div class="kpi amber">
+ <div class="kpi-label">承認待ち</div>
+ <div class="kpi-value">6</div>
+ <div class="kpi-sub">要対応</div>
+ </div>
+ <div class="kpi">
+ <div class="kpi-label">スタッフ数</div>
+ <div class="kpi-value">8</div>
+ <div class="kpi-sub">アクティブ</div>
+ </div>
+ <div class="kpi">
+ <div class="kpi-label">次回締切</div>
+ <div class="kpi-value" style="font-size:20px;">6/20</div>
+ <div class="kpi-sub">あと12日</div>
+ </div>
+ </div>
+
+ <div class="grid-2 mb-14">
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title">今週のシフト表</div>
+ <button class="btn btn-outline btn-sm" onclick="toast('印刷プレビューを開きます')">印刷</button>
+ </div>
+ <div class="card-body" style="padding:0; overflow-x:auto;">
+ <div class="shift-grid">
+ <div class="sg-head">氏名</div>
+ <div class="sg-head">月 6/16</div><div class="sg-head">火 6/17</div>
+ <div class="sg-head">水 6/18</div><div class="sg-head">木 6/19</div>
+ <div class="sg-head">金 6/20</div><div class="sg-head">土 6/21</div>
+ <div class="sg-head">日 6/22</div>
+
+ <div class="sg-name"><div class="avatar">田</div>田中 さくら</div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+
+ <div class="sg-name"><div class="avatar" style="background:#c8873a">山</div>山田 健太</div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+
+ <div class="sg-name"><div class="avatar" style="background:#7c5c8c">鈴</div>鈴木 美咲</div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+
+ <div class="sg-name"><div class="avatar" style="background:#2c7a7b">佐</div>佐藤 拓也</div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-full">通</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-early">早</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-late">遅</span></div>
+ <div class="sg-cell"><span class="shift-pill sp-off">休</span></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header"><div class="card-title">操作ログ</div></div>
+ <div class="card-body" style="padding:12px 14px;">
+ <div class="timeline">
+ <div class="tl-item"><div class="tl-dot green"></div><div class="tl-content"><div class="tl-action">田中さくら — シフト申請を提出</div><div class="tl-time">今日 09:14</div></div></div>
+ <div class="tl-item"><div class="tl-dot green"></div><div class="tl-content"><div class="tl-action">管理者 — 6月分シフトを確定</div><div class="tl-time">今日 08:52</div></div></div>
+ <div class="tl-item"><div class="tl-dot amber"></div><div class="tl-content"><div class="tl-action">山田健太 — シフト変更を申請</div><div class="tl-time">昨日 17:33</div></div></div>
+ <div class="tl-item"><div class="tl-dot"></div><div class="tl-content"><div class="tl-action">佐藤拓也 — ログイン</div><div class="tl-time">昨日 09:01</div></div></div>
+ <div class="tl-item"><div class="tl-dot green"></div><div class="tl-content"><div class="tl-action">鈴木美咲 — 申請提出（7月分）</div><div class="tl-time">6/14 22:10</div></div></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header"><div class="card-title">スタッフ一覧</div></div>
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>氏名</th><th>社員番号</th><th>権限</th><th>今月申請</th><th>有給残</th><th>ステータス</th></tr></thead>
+ <tbody>
+ <tr><td><div class="flex gap-8"><div class="avatar">田</div>田中 さくら</div></td><td><span style="font-family:'DM Mono';font-size:12px;">EMP001</span></td><td><span class="badge badge-amber">一般</span></td><td>提出済み</td><td>8日</td><td><span class="badge badge-green">確定</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#c8873a">山</div>山田 健太</div></td><td><span style="font-family:'DM Mono';font-size:12px;">EMP002</span></td><td><span class="badge badge-amber">一般</span></td><td>提出済み</td><td>5日</td><td><span class="badge badge-amber">承認待ち</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#7c5c8c">鈴</div>鈴木 美咲</div></td><td><span style="font-family:'DM Mono';font-size:12px;">EMP003</span></td><td><span class="badge badge-amber">一般</span></td><td>提出済み</td><td>10日</td><td><span class="badge badge-green">確定</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#2c7a7b">佐</div>佐藤 拓也</div></td><td><span style="font-family:'DM Mono';font-size:12px;">EMP004</span></td><td><span class="badge badge-amber">一般</span></td><td>未提出</td><td>3日</td><td><span class="badge badge-red">未提出</span></td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 管理者: 承認・確定 ========== -->
+<div class="panel admin-panel" id="panel-approval">
+ <div class="card mb-14">
+ <div class="card-header">
+ <div class="card-title">承認待ち申請</div>
+ <span class="badge badge-amber">6件</span>
+ </div>
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>スタッフ</th><th>日付</th><th>希望</th><th>メモ</th><th>操作</th></tr></thead>
+ <tbody id="approval-tbody">
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#c8873a">山</div>山田 健太</div></td><td>7/10 (木)</td><td><span class="shift-pill sp-full">通し</span></td><td>—</td><td><button class="btn btn-primary btn-sm" onclick="approve(this)">承認</button> <button class="btn btn-outline btn-sm" onclick="reject(this)"> 却下</button></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#c8873a">山</div>山田 健太</div></td><td>7/14 (月)</td><td><span class="shift-pill sp-off">休み</span></td><td>冠婚葬祭</td><td><button class="btn btn-primary btn-sm" onclick="approve(this)">承認</button> <button class="btn btn-outline btn-sm" onclick="reject(this)"> 却下</button></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#2c7a7b">佐</div>佐藤 拓也</div></td><td>7/5 (土)</td><td><span class="shift-pill sp-early">早番</span></td><td>—</td><td><button class="btn btn-primary btn-sm" onclick="approve(this)">承認</button> <button class="btn btn-outline btn-sm" onclick="reject(this)"> 却下</button></td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">承認済み（今月）</div><button class="btn btn-primary btn-sm" onclick="toast('全スタッフにメール通知を送信しました ')"> 全員に通知</button></div>
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>スタッフ</th><th>日付</th><th>確定シフト</th><th>承認日時</th></tr></thead>
+ <tbody>
+ <tr><td>田中 さくら</td><td>7/1〜7/15</td><td><span class="badge badge-green">確定済み</span></td><td>6/20 10:00</td></tr>
+ <tr><td>鈴木 美咲</td><td>7/1〜7/15</td><td><span class="badge badge-green">確定済み</span></td><td>6/20 10:05</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 管理者: タイムカード ========== -->
+<div class="panel admin-panel" id="panel-timecard-admin">
+ <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+ <div class="kpi green"><div class="kpi-label">本日 出勤済み</div><div class="kpi-value">5</div><div class="kpi-sub">予定8名中</div></div>
+ <div class="kpi amber"><div class="kpi-label">遅刻・未打刻</div><div class="kpi-value">1</div><div class="kpi-sub">要確認</div></div>
+ <div class="kpi"><div class="kpi-label">今月 総労働時間</div><div class="kpi-value">412h</div><div class="kpi-sub">先月比 +8h</div></div>
+ </div>
+ <div class="card mb-14">
+ <div class="card-header"><div class="card-title">本日の打刻状況</div><span style="font-size:12px;color:var(--text2);">2026年6月16日（月）</span></div>
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>スタッフ</th><th>出勤予定</th><th>打刻（出勤）</th><th>打刻（退勤）</th><th>実働時間</th><th>状態</th></tr></thead>
+ <tbody>
+ <tr><td><div class="flex gap-8"><div class="avatar">田</div>田中 さくら</div></td><td>09:00</td><td><span style="font-family:'DM Mono';color:var(--accent);">09:02</span></td><td><span style="font-family:'DM Mono';color:var(--text2);">—</span></td><td>勤務中</td><td><span class="badge badge-green">出勤中</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#c8873a">山</div>山田 健太</div></td><td>09:00</td><td><span style="font-family:'DM Mono';color:var(--accent);">09:15</span></td><td><span style="font-family:'DM Mono';color:var(--text2);">—</span></td><td>勤務中</td><td><span class="badge badge-amber">遅刻</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#7c5c8c">鈴</div>鈴木 美咲</div></td><td>13:00</td><td><span style="font-family:'DM Mono';color:var(--text2);">—</span></td><td><span style="font-family:'DM Mono';color:var(--text2);">—</span></td><td>—</td><td><span class="badge badge-gray">未出勤</span></td></tr>
+ <tr><td><div class="flex gap-8"><div class="avatar" style="background:#2c7a7b">佐</div>佐藤 拓也</div></td><td>休み</td><td>—</td><td>—</td><td>—</td><td><span class="badge badge-gray">休日</span></td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">今月の勤務実績（田中 さくら）</div>
+ <select class="form-control" style="width:auto;padding:5px 10px;font-size:12px;" onchange="toast('スタッフを切り替えました')">
+ <option>田中 さくら</option><option>山田 健太</option><option>鈴木 美咲</option><option>佐藤 拓也</option>
+ </select>
+ </div>
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th>実働</th><th>残業</th><th>備考</th></tr></thead>
+ <tbody>
+ <tr><td>6/1 (日)</td><td style="font-family:'DM Mono';">09:01</td><td style="font-family:'DM Mono';">18:03</td><td style="font-family:'DM Mono';">8h 52m</td><td style="font-family:'DM Mono';color:var(--accent2);">+52m</td><td>—</td></tr>
+ <tr><td>6/2 (月)</td><td style="font-family:'DM Mono';">09:00</td><td style="font-family:'DM Mono';">17:58</td><td style="font-family:'DM Mono';">8h 58m</td><td>—</td><td>—</td></tr>
+ <tr><td>6/3 (火)</td><td colspan="4" style="color:var(--text2);font-size:12px;">休み</td><td>—</td></tr>
+ <tr><td>6/4 (水)</td><td style="font-family:'DM Mono';">09:03</td><td style="font-family:'DM Mono';">18:30</td><td style="font-family:'DM Mono';">9h 27m</td><td style="font-family:'DM Mono';color:var(--accent2);">+1h 27m</td><td>—</td></tr>
+ <tr><td>6/5 (木)</td><td style="font-family:'DM Mono';">08:58</td><td style="font-family:'DM Mono';">18:00</td><td style="font-family:'DM Mono';">9h 02m</td><td>—</td><td>—</td></tr>
+ </tbody>
+ </table>
+ </div>
+ <div style="padding:12px 16px;border-top:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;gap:20px;flex-wrap:wrap;">
+ <span>月間合計: <strong style="color:var(--text);font-family:'DM Mono';">72h 19m</strong></span>
+ <span>残業合計: <strong style="color:var(--accent2);font-family:'DM Mono';">+2h 19m</strong></span>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 管理者: 設定 ========== -->
+<div class="panel admin-panel" id="panel-settings">
+ <div class="grid-2">
+ <div>
+ <div class="card mb-14">
+ <div class="card-header"><div class="card-title">通知設定</div></div>
+ <div class="card-body">
+ <div class="setting-row"><div class="setting-info"><div class="setting-label">申請受付時にLINE通知</div><div class="setting-desc">スタッフが申請を提出したら即時通知</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+ <div class="setting-row"><div class="setting-info"><div class="setting-label">シフト確定時にメール通知</div><div class="setting-desc">確定したスタッフへ自動送信</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+ <div class="setting-row"><div class="setting-info"><div class="setting-label">締切リマインダー</div><div class="setting-desc">締切3日前にスタッフへ自動通知</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">申請締切日</div></div>
+ <div class="card-body">
+ <div class="form-group"><label class="form-label">毎月の締切日</label><select class="form-control"><option>毎月 20日</option><option>毎月 25日</option><option>毎月末日</option></select></div>
+ <div class="form-group"><label class="form-label">対象月</label><select class="form-control"><option>翌月分</option><option>翌々月分</option></select></div>
+ <button class="btn btn-primary btn-sm" onclick="toast('締切設定を保存しました')">保存する</button>
+ </div>
+ </div>
+ </div>
+ <div>
+ <div class="card mb-14">
+ <div class="card-header"><div class="card-title"> シフト種別</div></div>
+ <div class="card-body">
+ <div class="table-wrap">
+ <table>
+ <thead><tr><th>名称</th><th>カラー</th><th>表示</th></tr></thead>
+ <tbody>
+ <tr><td>早番</td><td><span style="display:inline-block;width:14px;height:14px;background:#dbeafe;border-radius:3px;vertical-align:middle;"></span> 青</td><td><span class="badge badge-green">表示中</span></td></tr>
+ <tr><td>遅番</td><td><span style="display:inline-block;width:14px;height:14px;background:#fef3c7;border-radius:3px;vertical-align:middle;"></span> 黄</td><td><span class="badge badge-green">表示中</span></td></tr>
+ <tr><td>通し</td><td><span style="display:inline-block;width:14px;height:14px;background:#d1fae5;border-radius:3px;vertical-align:middle;"></span> 緑</td><td><span class="badge badge-green">表示中</span></td></tr>
+ <tr><td>休み希望</td><td><span style="display:inline-block;width:14px;height:14px;background:#f1f0ee;border-radius:3px;vertical-align:middle;"></span> グレー</td><td><span class="badge badge-green">表示中</span></td></tr>
+ </tbody>
+ </table>
+ </div>
+ <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="toast('種別を追加しました')">＋ 種別を追加</button>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">外部サービス連携</div></div>
+ <div class="card-body">
+ <div style="display:flex;flex-direction:column;gap:10px;">
+   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;">
+     <div style="display:flex;align-items:center;gap:10px;">
+       <div style="width:32px;height:32px;border-radius:8px;background:#06C755;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.02 2 11c0 3.18 1.72 5.98 4.32 7.68V22l3.5-1.93C10.53 20.35 11.26 20.5 12 20.5c5.52 0 10-4.02 10-9S17.52 2 12 2z"/></svg>
+       </div>
+       <div><div style="font-size:13px;font-weight:600;">LINE連携</div><div style="font-size:11px;color:var(--text3);">LINEでシフト通知・申請受付</div></div>
+     </div>
+     <button onclick="void(0)" style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:not-allowed;font-family:inherit;opacity:.65;">連携する</button>
+   </div>
+   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;">
+     <div style="display:flex;align-items:center;gap:10px;">
+       <div style="width:32px;height:32px;border-radius:8px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+         <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+       </div>
+       <div><div style="font-size:13px;font-weight:600;">Googleアカウント連携</div><div style="font-size:11px;color:var(--text3);">Googleアカウントでスタッフログイン</div></div>
+     </div>
+     <button onclick="void(0)" style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:not-allowed;font-family:inherit;opacity:.65;">連携する</button>
+   </div>
+   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;">
+     <div style="display:flex;align-items:center;gap:10px;">
+       <div style="width:32px;height:32px;border-radius:8px;background:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+       </div>
+       <div><div style="font-size:13px;font-weight:600;">Appleアカウント連携</div><div style="font-size:11px;color:var(--text3);">Apple IDでスタッフログイン</div></div>
+     </div>
+     <button onclick="void(0)" style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:not-allowed;font-family:inherit;opacity:.65;">連携する</button>
+   </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 従業員: マイページ ========== -->
+<div class="panel emp-panel active" id="panel-emp-home" style="display:none;">
+ <div class="emp-info-card">
+ <div class="emp-name">田中 さくら</div>
+ <div class="emp-meta">EMP001 ・ 一般スタッフ</div>
+ <div class="emp-wage-label" style="margin-top:12px;">今月見込み賃金</div>
+ <div class="emp-wage">¥89,200</div>
+ </div>
+
+ <div class="grid-2 mb-14">
+ <div class="card">
+ <div class="card-header"><div class="card-title">今週のシフト</div></div>
+ <div class="card-body" style="padding:12px;">
+ <table>
+ <thead><tr><th>日付</th><th>シフト</th><th>時間</th></tr></thead>
+ <tbody>
+ <tr><td>月 6/16</td><td><span class="shift-pill sp-early">早番</span></td><td style="font-family:'DM Mono';font-size:12px;">09:00〜17:00</td></tr>
+ <tr><td>火 6/17</td><td><span class="shift-pill sp-early">早番</span></td><td style="font-family:'DM Mono';font-size:12px;">09:00〜17:00</td></tr>
+ <tr><td>水 6/18</td><td><span class="shift-pill sp-off">休み</span></td><td style="color:var(--text3);font-size:12px;">—</td></tr>
+ <tr><td>木 6/19</td><td><span class="shift-pill sp-late">遅番</span></td><td style="font-family:'DM Mono';font-size:12px;">13:00〜22:00</td></tr>
+ <tr><td>金 6/20</td><td><span class="shift-pill sp-late">遅番</span></td><td style="font-family:'DM Mono';font-size:12px;">13:00〜22:00</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">今月の実績</div></div>
+ <div class="card-body">
+ <div style="display:flex;flex-direction:column;gap:12px;">
+ <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text2);">出勤日数</span><span style="font-family:'DM Mono';font-size:18px;font-weight:700;">12<span style="font-size:13px;font-weight:400;">日</span></span></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text2);">総労働時間</span><span style="font-family:'DM Mono';font-size:18px;font-weight:700;">96<span style="font-size:13px;font-weight:400;">h</span></span></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text2);">残業時間</span><span style="font-family:'DM Mono';font-size:18px;font-weight:700;color:var(--accent2);">+2h 19m</span></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--text2);">有給残日数</span><span style="font-family:'DM Mono';font-size:18px;font-weight:700;">8<span style="font-size:13px;font-weight:400;">日</span></span></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header"><div class="card-title">お知らせ</div></div>
+ <div class="card-body" style="padding:12px 14px;">
+ <div class="timeline">
+ <div class="tl-item"><div class="tl-dot green"></div><div class="tl-content"><div class="tl-action">7月分シフトが確定しました</div><div class="tl-time">6/20 10:00</div></div></div>
+ <div class="tl-item"><div class="tl-dot amber"></div><div class="tl-content"><div class="tl-action">7月分シフト申請の締切は6/25です</div><div class="tl-time">6/14 09:00</div></div></div>
+ <div class="tl-item"><div class="tl-dot green"></div><div class="tl-content"><div class="tl-action">6月分シフトが確定しました</div><div class="tl-time">5/20 10:00</div></div></div>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 従業員: シフト申請 ========== -->
+<div class="panel emp-panel" id="panel-emp-request" style="display:none;">
+ <div class="grid-2">
+ <div>
+ <div class="card mb-14">
+ <div class="card-header"><div class="card-title">シフト希望を提出する</div></div>
+ <div class="card-body">
+ <div class="form-group"><label class="form-label">対象月</label><select class="form-control"><option>2026年7月</option><option>2026年8月</option></select></div>
+ <div class="form-group"><label class="form-label">日付</label><input type="date" class="form-control" value="2026-07-15"></div>
+ <div class="form-group">
+ <label class="form-label">希望シフト</label>
+ <div class="radio-group" id="shift-pills">
+ <div class="radio-pill selected" onclick="selectShift(this)">早番</div>
+ <div class="radio-pill" onclick="selectShift(this)">遅番</div>
+ <div class="radio-pill" onclick="selectShift(this)">通し</div>
+ <div class="radio-pill" onclick="selectShift(this)">休み希望</div>
+ <div class="radio-pill" onclick="selectShift(this)">有給</div>
+ </div>
+ </div>
+ <div class="form-group"><label class="form-label">メモ（任意）</label><input class="form-control" placeholder="例: 午前中に通院あり"></div>
+ <button class="btn btn-primary btn-block" onclick="submitRequest()">提出する</button>
+ </div>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">提出済み一覧</div></div>
+ <div class="table-wrap">
+ <table id="request-table">
+ <thead><tr><th>日付</th><th>希望</th><th>状態</th></tr></thead>
+ <tbody>
+ <tr><td>7/1 (火)</td><td><span class="shift-pill sp-early">早番</span></td><td><span class="badge badge-green">確定</span></td></tr>
+ <tr><td>7/2 (水)</td><td><span class="shift-pill sp-off">休み</span></td><td><span class="badge badge-green">確定</span></td></tr>
+ <tr><td>7/3 (木)</td><td><span class="shift-pill sp-late">遅番</span></td><td><span class="badge badge-amber">確認中</span></td></tr>
+ <tr><td>7/7 (月)</td><td><span class="shift-pill sp-early">早番</span></td><td><span class="badge badge-gray">未確定</span></td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+</div>
+
+<!-- ========== 従業員: タイムカード ========== -->
+<div class="panel emp-panel" id="panel-emp-timecard" style="display:none;">
+ <div class="grid-2 mb-14">
+ <div class="punch-card">
+ <div style="font-size:13px;color:var(--text2);">本日</div>
+ <div class="punch-time" id="punch-clock">--:--</div>
+ <div class="punch-date" id="punch-date">2026年6月16日（月）</div>
+ <div class="punch-status out" id="punch-status">未出勤</div>
+ <div class="punch-btns">
+ <button class="btn btn-primary punch-btn" id="punch-btn" onclick="doPunch()">出勤打刻</button>
+ <button class="btn btn-break punch-btn" id="break-btn" onclick="doBreak()" style="display:none;">休憩 開始</button>
+ </div>
+ <div style="margin-top:14px;font-size:12px;color:var(--text3);line-height:1.7;" id="punch-log"></div>
+ </div>
+ <div class="card">
+ <div class="card-header"><div class="card-title">今週の実績</div></div>
+ <div class="card-body">
+ <table>
+ <thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th>実働</th></tr></thead>
+ <tbody>
+ <tr><td>月 6/16</td><td style="font-family:'DM Mono';color:var(--accent);">09:02</td><td style="font-family:'DM Mono';color:var(--text2);">—</td><td>勤務中</td></tr>
+ <tr><td>火 6/17</td><td style="font-family:'DM Mono';">09:00</td><td style="font-family:'DM Mono';">17:58</td><td style="font-family:'DM Mono';">8h 58m</td></tr>
+ <tr><td>水 6/18</td><td colspan="3" style="color:var(--text2);font-size:12px;">休み</td></tr>
+ <tr><td>木 6/19</td><td style="font-family:'DM Mono';">13:01</td><td style="font-family:'DM Mono';">22:05</td><td style="font-family:'DM Mono';">9h 04m</td></tr>
+ <tr><td>金 6/20</td><td style="font-family:'DM Mono';">13:00</td><td style="font-family:'DM Mono';">22:00</td><td style="font-family:'DM Mono';">9h 00m</td></tr>
+ </tbody>
+ </table>
+ <div style="padding:10px 0 0;font-size:13px;color:var(--text2);">今週合計: <strong style="color:var(--text);font-family:'DM Mono';">27h 02m</strong></div>
+ </div>
+ </div>
+ </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var currentView = 'admin';
+var punchState = 'out';
+var punchInTime = null;
+
+function switchView(v) {
+ currentView = v;
+ document.getElementById('btn-admin').classList.toggle('active', v === 'admin');
+ document.getElementById('btn-emp').classList.toggle('active', v === 'emp');
+
+ var adminTabs = document.getElementById('admin-tabs');
+ var empTabs = document.getElementById('emp-tabs');
+ adminTabs.style.display = v === 'admin' ? 'flex' : 'none';
+ empTabs.style.display = v === 'emp' ? 'flex' : 'none';
+
+ document.querySelectorAll('.admin-panel').forEach(function(p){ p.style.display = v === 'admin' ? '' : 'none'; p.classList.remove('active'); });
+ document.querySelectorAll('.emp-panel').forEach(function(p){ p.style.display = v === 'emp' ? '' : 'none'; p.classList.remove('active'); });
+
+ if (v === 'admin') {
+ document.getElementById('panel-admin').classList.add('active');
+ document.querySelectorAll('#admin-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+ document.querySelectorAll('#admin-tabs .tab')[0].classList.add('active');
+ } else {
+ document.getElementById('panel-emp-home').classList.add('active');
+ document.querySelectorAll('#emp-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+ document.querySelectorAll('#emp-tabs .tab')[0].classList.add('active');
+ }
+}
+
+function switchTab(id) {
+ document.querySelectorAll('#admin-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+ document.querySelectorAll('.admin-panel').forEach(function(p){ p.classList.remove('active'); });
+ var ids = ['admin','approval','timecard-admin','settings'];
+ document.querySelectorAll('#admin-tabs .tab')[ids.indexOf(id)].classList.add('active');
+ document.getElementById('panel-' + id).classList.add('active');
+}
+
+function switchEmpTab(id) {
+ document.querySelectorAll('#emp-tabs .tab').forEach(function(t){ t.classList.remove('active'); });
+ document.querySelectorAll('.emp-panel').forEach(function(p){ p.classList.remove('active'); });
+ var ids = ['emp-home','emp-request','emp-timecard'];
+ document.querySelectorAll('#emp-tabs .tab')[ids.indexOf(id)].classList.add('active');
+ document.getElementById('panel-' + id).classList.add('active');
+}
+
+function selectShift(el) {
+ document.querySelectorAll('#shift-pills .radio-pill').forEach(function(p){ p.classList.remove('selected'); });
+ el.classList.add('selected');
+}
+
+var shiftColors = { '早番':'sp-early', '遅番':'sp-late', '通し':'sp-full', '休み希望':'sp-off', '有給':'sp-off' };
+function submitRequest() {
+ var sel = document.querySelector('#shift-pills .radio-pill.selected');
+ var date = document.querySelector('#panel-emp-request input[type=date]').value;
+ if (!date || !sel) return;
+ var cls = shiftColors[sel.textContent] || 'sp-off';
+ var d = new Date(date);
+ var days = ['日','月','火','水','木','金','土'];
+ var label = (d.getMonth()+1) + '/' + d.getDate() + ' (' + days[d.getDay()] + ')';
+ var row = document.createElement('tr');
+ row.innerHTML = '<td>' + label + '</td><td><span class="shift-pill ' + cls + '">' + sel.textContent + '</span></td><td><span class="badge badge-gray">未確定</span></td>';
+ document.querySelector('#request-table tbody').prepend(row);
+ toast('申請を提出しました ');
+}
+
+function approve(btn) { btn.closest('tr').cells[4].innerHTML = '<span class="badge badge-green">承認済み</span>'; toast('承認しました'); }
+function reject(btn) { btn.closest('tr').cells[4].innerHTML = '<span class="badge badge-red"> 却下</span>'; toast('却下しました'); }
+
+// タイムカード
+function updateClock() {
+ var now = new Date();
+ var h = String(now.getHours()).padStart(2,'0');
+ var m = String(now.getMinutes()).padStart(2,'0');
+ var s = String(now.getSeconds()).padStart(2,'0');
+ var el = document.getElementById('punch-clock');
+ if (el) el.textContent = h + ':' + m + ':' + s;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+var breakStart = null;
+var breakTotal = 0;
+
+function doPunch() {
+ var now = new Date();
+ var h = String(now.getHours()).padStart(2,'0');
+ var m = String(now.getMinutes()).padStart(2,'0');
+ var btn = document.getElementById('punch-btn');
+ var brk = document.getElementById('break-btn');
+ var status = document.getElementById('punch-status');
+ var log = document.getElementById('punch-log');
+ if (punchState === 'out') {
+ punchState = 'in'; punchInTime = now; breakTotal = 0;
+ btn.textContent = '退勤打刻';
+ brk.style.display = 'inline-flex';
+ status.textContent = '出勤中';
+ status.className = 'punch-status in';
+ log.innerHTML = '出勤: ' + h + ':' + m;
+ toast('出勤しました ' + h + ':' + m);
+ } else {
+ punchState = 'out';
+ var diff = Math.round((now - punchInTime) / 60000) - breakTotal;
+ var wh = Math.floor(diff/60); var wm = diff % 60;
+ btn.textContent = '出勤打刻';
+ brk.style.display = 'none';
+ status.textContent = '退勤済み';
+ status.className = 'punch-status out';
+ var breakStr = breakTotal > 0 ? '　休憩: ' + breakTotal + '分' : '';
+ log.innerHTML = log.innerHTML + '<br>退勤: ' + h + ':' + m + breakStr + '<br>実働: ' + wh + 'h ' + wm + 'm';
+ toast('退勤しました ' + h + ':' + m);
+ }
+}
+
+function doBreak() {
+ var now = new Date();
+ var h = String(now.getHours()).padStart(2,'0');
+ var m = String(now.getMinutes()).padStart(2,'0');
+ var btn = document.getElementById('break-btn');
+ var status = document.getElementById('punch-status');
+ var log = document.getElementById('punch-log');
+ if (!breakStart) {
+ breakStart = now;
+ btn.textContent = '休憩 終了';
+ btn.classList.remove('btn-break'); btn.classList.add('btn-outline');
+ status.textContent = '休憩中'; status.className = 'punch-status break';
+ log.innerHTML = log.innerHTML + '<br>休憩開始: ' + h + ':' + m;
+ toast('休憩を開始しました ' + h + ':' + m);
+ } else {
+ var dur = Math.round((now - breakStart) / 60000);
+ breakTotal += dur;
+ breakStart = null;
+ btn.textContent = '休憩 開始';
+ btn.classList.remove('btn-outline'); btn.classList.add('btn-break');
+ status.textContent = '出勤中'; status.className = 'punch-status in';
+ log.innerHTML = log.innerHTML + '<br>休憩終了: ' + h + ':' + m + '（' + dur + '分）';
+ toast('休憩終了 ' + dur + '分');
+ }
+}
+
+var toastTimer;
+function toast(msg) {
+ var el = document.getElementById('toast');
+ el.textContent = msg;
+ el.classList.add('show');
+ clearTimeout(toastTimer);
+ toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2400);
+}
+</script>
+<script>
+function dcbBack() {
+ if (window.opener && !window.opener.closed) {
+ window.close();
+ } else {
+ location.href = 'https://icebergs.jp/shift/';
+ }
+}
+</script>
+
+<!-- お問い合せモーダル -->
+<div id="slp-consult-modal" style="font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,.75);padding:20px;"><style>#slp-consult-modal input,#slp-consult-modal select,#slp-consult-modal textarea,#slp-consult-modal button,#slp-consult-modal label{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif!important;}</style>
+  <div style="background:#111;border:1px solid rgba(255,255,255,.15);border-radius:16px;max-width:480px;width:100%;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,.1);">
+      <h3 style="margin:0;font-size:16px;font-weight:700;color:#fff;">お問い合せ</h3>
+      <button onclick="document.getElementById('slp-consult-modal').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
+    </div>
+    <div style="overflow-y:auto;padding:20px 24px;">
+      <div id="slp-form-area">
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:6px;">メールアドレス <span style="color:#ef4444;">*</span></label>
+          <input id="slp-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:6px;">目的 <span style="color:#ef4444;">*</span></label>
+          <select id="slp-purpose" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;appearance:none;">
+            <option value="" style="background:#111;">選択してください</option>
+            <option value="無料試用の開始" style="background:#111;" selected>無料試用の開始</option>
+            <option value="料金・プランについて" style="background:#111;">料金・プランについて</option>
+            <option value="カスタム内容の相談" style="background:#111;">カスタム内容の相談</option>
+            <option value="既存システムからの移行" style="background:#111;">既存システムからの移行</option>
+            <option value="その他" style="background:#111;">その他</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:6px;">メッセージ（任意）</label>
+          <textarea id="slp-message" rows="4" placeholder="" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+        </div>
+        <div id="slp-form-error" style="display:none;color:#ef4444;font-size:13px;margin-bottom:12px;"></div>
+        <button id="slp-submit-btn" onclick="slpSubmitForm()" style="width:100%;padding:13px;background:#fff;color:#000;border:none;border-radius:999px;font-size:15px;font-weight:700;cursor:pointer;">送信する</button>
+        <button onclick="document.getElementById('slp-consult-modal').style.display='none'" style="width:100%;padding:11px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;font-size:13px;cursor:pointer;margin-top:8px;">閉じる</button>
+      </div>
+      <div id="slp-form-thanks" style="display:none;text-align:center;padding:20px 0;">
+        <p style="font-size:32px;margin:0 0 12px;">✓</p>
+        <p style="color:#fff !important;font-size:16px;font-weight:700;margin:0 0 8px;">送信しました</p>
+        <p style="font-size:13px;margin:0 0 20px;">内容を確認のうえ、1営業日以内にご連絡いたします。</p>
+        <button onclick="document.getElementById('slp-consult-modal').style.display='none';document.getElementById('slp-form-thanks').style.display='none';document.getElementById('slp-form-area').style.display='block';" style="padding:10px 32px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:999px;font-size:14px;cursor:pointer;">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('slp-consult-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+function slpOpenConsult() {
+  document.getElementById('slp-form-area').style.display = 'block';
+  document.getElementById('slp-form-thanks').style.display = 'none';
+  document.getElementById('slp-form-error').style.display = 'none';
+  var btn = document.getElementById('slp-submit-btn');
+  btn.textContent = '送信する';
+  btn.disabled = false;
+  document.getElementById('slp-purpose').value = '無料試用の開始';
+  document.getElementById('slp-consult-modal').style.display = 'flex';
+}
+function slpSubmitForm() {
+  var email   = document.getElementById('slp-email').value.trim();
+  var purpose = document.getElementById('slp-purpose').value;
+  var message = document.getElementById('slp-message').value.trim();
+  var errEl   = document.getElementById('slp-form-error');
+  var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!email || !emailRe.test(email)) {
+    errEl.textContent = '正しいメールアドレスを入力してください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!purpose) {
+    errEl.textContent = '目的を選択してください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  var btn = document.getElementById('slp-submit-btn');
+  btn.textContent = '送信中...';
+  btn.disabled = true;
+  var fd = new FormData();
+  fd.append('slp_consult', '1');
+  fd.append('email', email);
+  fd.append('purpose', purpose);
+  fd.append('message', message);
+  fetch('https://shift.nobushi.jp/', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        document.getElementById('slp-form-area').style.display = 'none';
+        document.getElementById('slp-form-thanks').style.display = 'block';
+      } else {
+        errEl.textContent = d.error || '送信に失敗しました。';
+        errEl.style.display = 'block';
+        btn.textContent = '送信する';
+        btn.disabled = false;
+      }
+    })
+    .catch(function() {
+      errEl.textContent = '送信に失敗しました。時間をおいて再度お試しください。';
+      errEl.style.display = 'block';
+      btn.textContent = '送信する';
+      btn.disabled = false;
+    });
+}
+</script>
+
+</body>
+</html>

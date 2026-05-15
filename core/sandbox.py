@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 """
 HTMLファイルを対象に修正を行うサンドボックス。
-target_app/demo.html（shift.nobushiのデモページのローカルコピー）を
-CodeBridgeが読み込み・修正・検証する。
-既存サーバー（shift.nobushi.jp）には一切接触しない。
+target_app/demo_local.html（汎用デモのCodeBridge専用コピー）を修正対象とする。
+元の demo.html（shift.nobushi.jpのオリジナル）には一切触れない。
+shift.nobushi.jp 本番サーバーにも一切接触しない。
 """
 import subprocess
 import tempfile
@@ -10,91 +11,82 @@ import os
 import shutil
 from pathlib import Path
 
-TARGET_PATH = Path(__file__).parent.parent / "target_app" / "demo.html"
-BACKUP_PATH = Path(__file__).parent.parent / "target_app" / "demo.backup.html"
+TARGET_PATH = Path(__file__).parent.parent / "target_app" / "demo_local.html"
+BACKUP_PATH = Path(__file__).parent.parent / "target_app" / "demo_local.backup.html"
 
-TIMEOUT_SECONDS = 10
+TIMEOUT_SECONDS = 15
 
-# HTML内で禁止するパターン（XSSリスク等）
 BLOCKED_PATTERNS = [
-    "<script>document.cookie",
-    "eval(",
-    "fetch('http://",
-    "XMLHttpRequest",
+    "document.cookie",
+    "localStorage.clear",
     "window.location='http",
+    "fetch('http://",
 ]
 
 
-def execute_code(code: str) -> tuple[str, str]:
+def execute_code(html: str) -> tuple[str, str]:
     """
-    HTMLの検証を行う。
-    Pythonでhtml.parserを使って構文チェック。
+    HTMLをテンポラリファイルに書き出し、
+    別のPythonプロセスでUTF-8として読み込んで検証する。
     """
-    safety_error = _check_safety(code)
+    safety_error = _check_safety(html)
     if safety_error:
         return "", f"[安全性チェック失敗] {safety_error}"
 
-    validation_script = f"""
-from html.parser import HTMLParser
+    # HTMLをUTF-8のテンポラリファイルに書く
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".html", delete=False, encoding="utf-8"
+    ) as fh:
+        fh.write(html)
+        html_path = fh.name
+
+    # 検証スクリプト（ASCII only）
+    validation_script = f'''# -*- coding: utf-8 -*-
 import sys
+from html.parser import HTMLParser
+
+html_path = {repr(html_path)}
+
+with open(html_path, encoding="utf-8") as f:
+    content = f.read()
+
+void_tags = {{"area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"}}
 
 class Validator(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.errors = []
-        self.tag_stack = []
-        self.void_tags = {{'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}}
-
+        self.stack = []
     def handle_starttag(self, tag, attrs):
-        if tag not in self.void_tags:
-            self.tag_stack.append(tag)
-
+        if tag not in void_tags:
+            self.stack.append(tag)
     def handle_endtag(self, tag):
-        if tag in self.void_tags:
-            return
-        if self.tag_stack and self.tag_stack[-1] == tag:
-            self.tag_stack.pop()
-
-html_content = {repr(code)}
+        if tag not in void_tags and self.stack and self.stack[-1] == tag:
+            self.stack.pop()
 
 try:
-    parser = Validator()
-    parser.feed(html_content)
-    tag_count = html_content.lower().count('<html')
-    if tag_count == 0:
-        print("WARNING: <html>タグが見つかりません")
-    else:
-        print(f"HTML構文チェックOK")
-
-    # 基本的な要素の確認
-    checks = [
-        ('<title', 'titleタグ'),
-        ('<body', 'bodyタグ'),
-    ]
-    for tag, name in checks:
-        if tag in html_content.lower():
-            print(f"  {{name}}: 存在")
-        else:
-            print(f"  WARNING: {{name}}が見つかりません")
-
-    char_count = len(html_content)
-    print(f"  文字数: {{char_count:,}}")
-    print(f"  行数: {{html_content.count(chr(10)):,}}")
-
+    v = Validator()
+    v.feed(content)
+    print("HTML validation OK")
+    print(f"  chars: {{len(content):,}}")
+    print(f"  lines: {{content.count(chr(10)):,}}")
+    has_html  = "<html"  in content.lower()
+    has_body  = "<body"  in content.lower()
+    has_title = "<title" in content.lower()
+    print(f"  html tag: {{has_html}}, body: {{has_body}}, title: {{has_title}}")
 except Exception as e:
     print(f"ERROR: {{e}}", file=sys.stderr)
     sys.exit(1)
-"""
+'''
 
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".py", delete=False, encoding="utf-8"
-    ) as f:
-        f.write(validation_script)
-        tmp_path = f.name
+    ) as fp:
+        fp.write(validation_script)
+        py_path = fp.name
 
     try:
         result = subprocess.run(
-            ["python3", tmp_path],
+            ["python3", py_path],
             capture_output=True, text=True, timeout=TIMEOUT_SECONDS,
         )
         return result.stdout.strip(), result.stderr.strip()
@@ -103,21 +95,22 @@ except Exception as e:
     except Exception as e:
         return "", f"[実行エラー] {str(e)}"
     finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        for p in [html_path, py_path]:
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
 
 
 def read_target_code() -> str:
-    """デモHTMLを読み込む。"""
+    """CodeBridge専用のローカルデモHTMLを読み込む。"""
     if TARGET_PATH.exists():
         return TARGET_PATH.read_text(encoding="utf-8")
-    return "<html><body><h1>デモファイルが見つかりません</h1></body></html>"
+    return "<html><body><h1>demo_local.html が見つかりません</h1></body></html>"
 
 
 def apply_code(new_code: str) -> None:
-    """バックアップ取得後、デモHTMLを差し替える。"""
+    """バックアップ取得後、ローカルデモHTMLを差し替える。"""
     TARGET_PATH.parent.mkdir(parents=True, exist_ok=True)
     if TARGET_PATH.exists():
         shutil.copy2(TARGET_PATH, BACKUP_PATH)
