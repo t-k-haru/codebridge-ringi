@@ -91,7 +91,7 @@ if st.session_state.mode == "user":
     st.markdown("<h1>変更をリクエスト</h1>", unsafe_allow_html=True)
     st.markdown("<p style='margin-top:6px;margin-bottom:28px;color:#6e6e73'>変えたいことを日本語で伝えるだけで、AIがコードに変換します。エンジニアが確認・承認した後に本番環境へ反映されます。</p>", unsafe_allow_html=True)
     with st.form("user_form"):
-        instruction = st.text_area("指示内容", placeholder="例：\n・シフト表の色を部署ごとに変えてほしい\n・今月の残業時間の合計を一覧に追加したい\n・スタッフ名で絞り込めるフィルター機能をつけたい", height=160)
+        instruction = st.text_area("指示内容", placeholder="例：\n・シフト表のヘッダー背景色を変えたい\n・KPIカードの数字を大きくしてほしい\n・テーブル行ホバー時にハイライトを追加したい", height=160)
         submitted = st.form_submit_button("AIに送信", use_container_width=True, type="primary")
     if submitted and instruction.strip():
         st.session_state.deployed = False; st.session_state.result = None

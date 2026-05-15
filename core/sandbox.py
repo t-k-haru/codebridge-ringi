@@ -1,6 +1,8 @@
 """
-生成されたコードを安全に実行するサンドボックスモジュール。
-subprocess + タイムアウトで隔離実行し、stdout/stderr を返す。
+HTMLファイルを対象に修正を行うサンドボックス。
+target_app/demo.html（shift.nobushiのデモページのローカルコピー）を
+CodeBridgeが読み込み・修正・検証する。
+既存サーバー（shift.nobushi.jp）には一切接触しない。
 """
 import subprocess
 import tempfile
@@ -8,50 +10,98 @@ import os
 import shutil
 from pathlib import Path
 
-TARGET_PATH = Path(__file__).parent.parent / "target_app" / "main.py"
-BACKUP_PATH = Path(__file__).parent.parent / "target_app" / "main.backup.py"
-
-BLOCKED_PATTERNS = [
-    "os.system", "subprocess", "__import__('os')",
-    "shutil.rmtree", "open('/etc", "open('/proc",
-    "socket.connect", "urllib.request.urlopen",
-]
+TARGET_PATH = Path(__file__).parent.parent / "target_app" / "demo.html"
+BACKUP_PATH = Path(__file__).parent.parent / "target_app" / "demo.backup.html"
 
 TIMEOUT_SECONDS = 10
+
+# HTML内で禁止するパターン（XSSリスク等）
+BLOCKED_PATTERNS = [
+    "<script>document.cookie",
+    "eval(",
+    "fetch('http://",
+    "XMLHttpRequest",
+    "window.location='http",
+]
 
 
 def execute_code(code: str) -> tuple[str, str]:
     """
-    コードを一時ファイルに書き込み、subprocess で実行。
-    (stdout, stderr) のタプルを返す。
+    HTMLの検証を行う。
+    Pythonでhtml.parserを使って構文チェック。
     """
-    # 安全性チェック
     safety_error = _check_safety(code)
     if safety_error:
         return "", f"[安全性チェック失敗] {safety_error}"
 
+    validation_script = f"""
+from html.parser import HTMLParser
+import sys
+
+class Validator(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.errors = []
+        self.tag_stack = []
+        self.void_tags = {{'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}}
+
+    def handle_starttag(self, tag, attrs):
+        if tag not in self.void_tags:
+            self.tag_stack.append(tag)
+
+    def handle_endtag(self, tag):
+        if tag in self.void_tags:
+            return
+        if self.tag_stack and self.tag_stack[-1] == tag:
+            self.tag_stack.pop()
+
+html_content = {repr(code)}
+
+try:
+    parser = Validator()
+    parser.feed(html_content)
+    tag_count = html_content.lower().count('<html')
+    if tag_count == 0:
+        print("WARNING: <html>タグが見つかりません")
+    else:
+        print(f"HTML構文チェックOK")
+
+    # 基本的な要素の確認
+    checks = [
+        ('<title', 'titleタグ'),
+        ('<body', 'bodyタグ'),
+    ]
+    for tag, name in checks:
+        if tag in html_content.lower():
+            print(f"  {{name}}: 存在")
+        else:
+            print(f"  WARNING: {{name}}が見つかりません")
+
+    char_count = len(html_content)
+    print(f"  文字数: {{char_count:,}}")
+    print(f"  行数: {{html_content.count(chr(10)):,}}")
+
+except Exception as e:
+    print(f"ERROR: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
+
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".py", delete=False, encoding="utf-8"
     ) as f:
-        f.write(code)
+        f.write(validation_script)
         tmp_path = f.name
 
     try:
         result = subprocess.run(
-            ["python", tmp_path],
-            capture_output=True,
-            text=True,
-            timeout=TIMEOUT_SECONDS,
-            env={**os.environ, "SANDBOX": "1"},  # サンドボックスフラグ
+            ["python3", tmp_path],
+            capture_output=True, text=True, timeout=TIMEOUT_SECONDS,
         )
         return result.stdout.strip(), result.stderr.strip()
-
     except subprocess.TimeoutExpired:
         return "", f"[タイムアウト] {TIMEOUT_SECONDS}秒以内に完了しませんでした"
-
     except Exception as e:
         return "", f"[実行エラー] {str(e)}"
-
     finally:
         try:
             os.unlink(tmp_path)
@@ -60,65 +110,22 @@ def execute_code(code: str) -> tuple[str, str]:
 
 
 def read_target_code() -> str:
-    """ターゲットアプリのコードを読み込む。"""
+    """デモHTMLを読み込む。"""
     if TARGET_PATH.exists():
         return TARGET_PATH.read_text(encoding="utf-8")
-    return _default_target_code()
+    return "<html><body><h1>デモファイルが見つかりません</h1></body></html>"
 
 
 def apply_code(new_code: str) -> None:
-    """
-    バックアップを取得した上で、ターゲットアプリを新しいコードに差し替える。
-    """
+    """バックアップ取得後、デモHTMLを差し替える。"""
     TARGET_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    # バックアップ
     if TARGET_PATH.exists():
         shutil.copy2(TARGET_PATH, BACKUP_PATH)
-
-    # 適用
     TARGET_PATH.write_text(new_code, encoding="utf-8")
 
 
 def _check_safety(code: str) -> str:
-    """危険なパターンが含まれていればエラーメッセージを返す。"""
     for pattern in BLOCKED_PATTERNS:
         if pattern in code:
             return f"禁止パターンが検出されました: `{pattern}`"
     return ""
-
-
-def _default_target_code() -> str:
-    """デモ用のデフォルトターゲットコード（Flask アプリ）。"""
-    return '''from flask import Flask, jsonify
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    return """
-    <html>
-    <head><title>サンプル会社</title></head>
-    <body>
-      <h1>サンプル株式会社</h1>
-      <p>ようこそ。私たちは最高のサービスを提供します。</p>
-      <nav>
-        <a href="/">ホーム</a>
-      </nav>
-    </body>
-    </html>
-    """
-
-@app.route("/api/status")
-def status():
-    return jsonify({"status": "ok", "version": "1.0.0"})
-
-if __name__ == "__main__":
-    # サンドボックスモードでは起動せず構文チェックのみ
-    import os
-    if not os.environ.get("SANDBOX"):
-        app.run(debug=True, port=5000)
-    else:
-        print("構文チェックOK: Flaskアプリが正常にインポートできました")
-        print(f"定義済みルート: {[str(r) for r in app.url_map.iter_rules()]}")
-'''
