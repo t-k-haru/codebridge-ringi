@@ -1,9 +1,0 @@
-<step title="Incoming Request" date="2026-05-14T14:33:50.575" instance="51f7d5" url="/api/deployments?warmup=true" method="GET" type="request" pid="839,1,3" Accept="*/*" Host="codebridge-t-k-haru.scm.azurewebsites.net" User-Agent="AZURECLI/2.86.0 (HOMEBREW)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cookie="ARRAffinity=51f7d50ebb3aaef6dc8dc5c230072f869db8a7342ae1196cc78e4b3b1ab2053e; ARRAffinitySameSite=51f7d50ebb3aaef6dc8dc5c230072f869db8a7342ae1196cc78e4b3b1ab2053e" x-ms-client-request-id="e2d1dfa0-4fa1-11f1-830e-ae945a89a8df" X-ARR-LOG-ID="e2d1dfa0-4fa1-11f1-830e-ae945a89a8df" CLIENT-IP="1.21.50.114:27710" X-SITE-DEPLOYMENT-ID="codebridge-t-k-haru" WAS-DEFAULT-HOSTNAME="codebridge-t-k-haru.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments?warmup=true" X-Client-IP="1.21.50.114" X-Client-Port="27710" >
-  <step title="DeploymentService.GetCurrentEtag" date="2026-05-14T14:33:54.960" >
-    <step title="Current Etag: &quot;8deb1c55e644666&quot;, Cached Etag: " date="2026-05-14T14:33:59.117" /><!-- duration: 107ms -->
-  </step><!-- duration: 4285ms -->
-  <step title="DeploymentService.GetDeployResults" date="2026-05-14T14:33:59.286" >
-    <step title="DeploymentManager.GetResults" date="2026-05-14T14:33:59.322" /><!-- duration: 1384ms -->
-  </step><!-- duration: 1516ms -->
-  <step title="Outgoing response" date="2026-05-14T14:34:01.725" type="response" statusCode="200" statusText="OK" /><!-- duration: 118ms -->
-</step><!-- duration: 11351ms -->
