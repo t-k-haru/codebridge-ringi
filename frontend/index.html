@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CodeBridge</title>
+<style>
+/* ── リセット & ベース ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111113;--bg2:#1c1c1e;--sfc:rgba(28,28,30,0.97);--sfc2:rgba(38,38,40,0.98);
+  --brd:rgba(255,255,255,0.12);--glb:rgba(255,255,255,0.10);
+  --txt:#f5f5f7;--tx2:#d1d1d6;--tx3:#8e8e93;
+  --inb:rgba(44,44,46,0.98);--inr:rgba(255,255,255,0.20);
+  --pbg:#f5f5f7;--ptxt:#111113;
+  --shd:0 4px 24px rgba(0,0,0,0.55);
+  --grn:#34c759;--amb:#ff9500;--red:#ff3b30;
+  --r:13px;--r-sm:10px;
+}
+[data-theme="light"]{
+  --bg:#f2f2f7;--bg2:#e5e5ea;--sfc:rgba(255,255,255,0.96);--sfc2:rgba(242,242,247,0.98);
+  --brd:rgba(0,0,0,0.09);--glb:rgba(255,255,255,0.85);
+  --txt:#111113;--tx2:#3a3a3c;--tx3:#6d6d72;
+  --inb:#ffffff;--inr:rgba(0,0,0,0.22);
+  --pbg:#111113;--ptxt:#ffffff;
+  --shd:0 2px 12px rgba(0,0,0,0.09);
+}
+html,body{
+  background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+  transition:background .15s,color .15s;
+}
+/* ── レイアウト ──────────────────────────────────────────────────── */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--sfc);
+  border-right:1px solid var(--brd);
+  padding:20px 14px;
+  display:flex;flex-direction:column;gap:4px;
+  position:fixed;top:0;left:0;height:100vh;
+  z-index:100;overflow-y:auto;
+  transition:transform .2s ease;
+}
+.sidebar.collapsed{transform:translateX(-100%)}
+.main{
+  flex:1;margin-left:240px;padding:24px 28px 48px;
+  max-width:1060px;transition:margin-left .2s;
+}
+.main.full{margin-left:0}
+/* ── ハンバーガー ────────────────────────────────────────────────── */
+.hamburger{
+  position:fixed;top:14px;left:14px;z-index:200;
+  width:36px;height:36px;border-radius:9px;
+  background:var(--sfc);border:1px solid var(--brd);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;box-shadow:var(--shd);
+  transition:all .15s;color:var(--txt);
+}
+.hamburger:hover{opacity:.8}
+/* ── タイポグラフィ ─────────────────────────────────────────────── */
+h1{font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--txt);margin-bottom:18px;padding-top:4px}
+h2{font-size:15px;font-weight:600;color:var(--txt);margin:18px 0 8px}
+p{font-size:14px;color:var(--tx2);line-height:1.6}
+/* ── ガラスカード ────────────────────────────────────────────────── */
+.card{
+  background:var(--sfc);backdrop-filter:blur(20px);
+  border:1px solid var(--glb);border-radius:var(--r);
+  box-shadow:var(--shd);padding:16px 18px;margin-bottom:10px;
+}
+.card-sm{
+  background:var(--sfc2);border:1px solid var(--brd);
+  border-radius:var(--r-sm);padding:9px 12px;margin-bottom:6px;
+}
+.card.bl{border-left:3px solid var(--txt)}
+.card.gn{border-left:3px solid var(--grn)}
+.card.am{border-left:3px solid var(--amb)}
+.card.rd{border-left:3px solid var(--red)}
+/* ── セクションヘッダー ─────────────────────────────────────────── */
+.sec{
+  font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--tx3);margin:18px 0 7px;padding-bottom:5px;
+  border-bottom:1px solid var(--brd);
+}
+/* ── ナビボタン ─────────────────────────────────────────────────── */
+.nav-btn{
+  display:block;width:100%;padding:9px 12px;border-radius:9px;
+  font-size:13px;font-weight:500;text-align:left;cursor:pointer;
+  border:none;background:transparent;color:var(--tx2);
+  transition:all .12s;
+}
+.nav-btn:hover{background:var(--sfc2);color:var(--txt)}
+.nav-btn.active{background:var(--sfc2);color:var(--txt);font-weight:600}
+/* ── ボタン ─────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 18px;border-radius:9px;font-size:13px;font-weight:500;
+  cursor:pointer;border:none;transition:opacity .12s,transform .12s;
+  font-family:inherit;white-space:nowrap;min-height:40px;
+}
+.btn-primary{background:var(--pbg);color:var(--ptxt);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.btn-primary:hover{opacity:.80;transform:translateY(-1px)}
+.btn-secondary{background:var(--sfc2);color:var(--txt);border:1px solid var(--brd)}
+.btn-secondary:hover{opacity:.80;transform:translateY(-1px)}
+.btn-full{width:100%}
+.btn-sm{padding:6px 12px;font-size:12px;min-height:32px}
+.btn-danger{background:rgba(255,59,48,.15);color:var(--red);border:1px solid rgba(255,59,48,.3)}
+/* ── 重要度ピル ─────────────────────────────────────────────────── */
+.prio-row{display:flex;gap:6px;margin-bottom:14px}
+.prio-btn{flex:1;padding:7px 4px;border-radius:9px;font-size:12px;font-weight:600;
+  text-align:center;cursor:pointer;border:1.5px solid var(--brd);
+  background:var(--sfc2);color:var(--tx3);transition:all .12s;font-family:inherit}
+.prio-btn.sel-low{background:rgba(52,199,89,.15);color:var(--grn);border-color:var(--grn)}
+.prio-btn.sel-mid{background:var(--pbg);color:var(--ptxt);border-color:var(--pbg)}
+.prio-btn.sel-high{background:rgba(255,149,0,.15);color:var(--amb);border-color:var(--amb)}
+.prio-btn.sel-urgent{background:rgba(255,59,48,.15);color:var(--red);border-color:var(--red)}
+/* ── 入力 ────────────────────────────────────────────────────────── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:500;color:var(--tx2);margin-bottom:5px}
+.field input,.field textarea,.field select{
+  width:100%;padding:9px 11px;
+  background:var(--inb);border:1.5px solid var(--inr);border-radius:var(--r-sm);
+  font-size:13.5px;font-family:inherit;color:var(--txt);
+  outline:none;transition:border-color .12s,box-shadow .12s;
+  -webkit-appearance:none;
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--tx3)}
+.field input:focus,.field textarea:focus{
+  border-color:rgba(255,255,255,.45);
+  box-shadow:0 0 0 2px rgba(255,255,255,.07);
+}
+[data-theme="light"] .field input:focus,[data-theme="light"] .field textarea:focus{
+  border-color:rgba(0,0,0,.40);box-shadow:0 0 0 2px rgba(0,0,0,.06);
+}
+.field textarea{resize:vertical;line-height:1.5}
+/* ── メトリクス ─────────────────────────────────────────────────── */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.metric{
+  background:var(--sfc);border:1px solid var(--glb);border-radius:12px;
+  box-shadow:var(--shd);padding:13px 14px;text-align:center;
+}
+.metric-label{font-size:9.5px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase}
+.metric-val{font-size:26px;font-weight:300;letter-spacing:-1px;color:var(--txt);line-height:1.1;margin:4px 0 2px}
+.metric-unit{font-size:11px;color:var(--tx3)}
+/* ── バッジ ─────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:10px}
+/* ── タブ ────────────────────────────────────────────────────────── */
+.tabs-bar{display:flex;gap:2px;background:var(--bg2);border-radius:9px;padding:3px;margin-bottom:10px}
+.tab-btn{flex:1;padding:6px 10px;border-radius:7px;font-size:12.5px;font-weight:500;
+  cursor:pointer;border:none;background:transparent;color:var(--tx3);
+  transition:all .12s;font-family:inherit;white-space:nowrap}
+.tab-btn.active{background:var(--sfc);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.20)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* ── Diff ────────────────────────────────────────────────────────── */
+.diff-wrap{background:var(--sfc);border:1px solid var(--glb);border-radius:var(--r);
+  padding:12px 14px;overflow-x:auto;font-family:'SF Mono',monospace;font-size:12px;line-height:1.6}
+.da{display:block;background:rgba(52,199,89,.11);color:#5be075;padding:0 6px;border-left:2px solid var(--grn)}
+.dd{display:block;background:rgba(255,59,48,.09);color:#ff6961;padding:0 6px;border-left:2px solid var(--red)}
+.dc{display:block;color:var(--tx3);padding:0 6px}
+.dh{display:block;color:var(--tx2);padding:0 6px;font-weight:600}
+[data-theme="light"] .da{color:#1a6b30}[data-theme="light"] .dd{color:#a01010}
+/* ── ローダー ────────────────────────────────────────────────────── */
+.loader{display:flex;gap:5px;align-items:center;padding:14px;color:var(--tx2);font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid var(--brd);border-top-color:var(--txt);
+  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-bar{height:3px;background:var(--brd);border-radius:2px;overflow:hidden;margin:6px 0 12px}
+.progress-fill{height:100%;background:var(--pbg);border-radius:2px;transition:width .3s ease}
+/* ── ログインページ ─────────────────────────────────────────────── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{width:100%;max-width:360px}
+/* ── ユーティリティ ─────────────────────────────────────────────── */
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.hide{display:none!important}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0}
+.dot-grn{background:var(--grn)}.dot-red{background:var(--red)}
+.user-info{margin-bottom:14px}
+.user-name{font-size:14px;font-weight:600;color:var(--txt)}
+.user-sub{font-size:11px;color:var(--tx3);margin-top:2px}
+.sys-row{display:flex;align-items:center;gap:8px;padding:7px 0}
+.alert{padding:12px 14px;border-radius:var(--r-sm);font-size:13px;margin-bottom:10px}
+.alert-ok{background:rgba(52,199,89,.12);color:var(--grn)}
+.alert-err{background:rgba(255,59,48,.10);color:var(--red)}
+.alert-warn{background:rgba(255,149,0,.10);color:var(--amb)}
+pre{background:var(--bg2);border-radius:8px;padding:10px;font-size:11.5px;overflow-x:auto;color:var(--tx2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;
+  padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd)}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--tx2)}
+[data-theme="light"] td{border-bottom-color:rgba(0,0,0,.04)}
+tr:last-child td{border-bottom:none}
+/* ── レスポンシブ ────────────────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{width:260px}
+  .sidebar.collapsed{transform:translateX(-100%)}
+  .main{margin-left:0!important;padding:14px 12px 32px}
+  h1{font-size:18px;margin-top:44px}
+  .metrics{grid-template-columns:repeat(3,1fr)}
+  .metric-val{font-size:20px}
+  .prio-row{flex-wrap:wrap}
+  .prio-btn{flex:1;min-width:calc(50% - 4px)}
+}
+@media(min-width:769px){
+  .sidebar{transform:translateX(0)!important}
+  .hamburger{display:none}
+}
+</style>
+</head>
+<body>
+<!-- ハンバーガーメニュー -->
+<button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+
+<!-- ログイン画面 -->
+<div id="login-page" class="login-wrap">
+  <div class="login-box">
+    <div class="card" style="padding:24px 22px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">CodeBridge</div>
+      <div style="font-size:13px;color:var(--tx3);margin-bottom:22px">Sign in to continue</div>
+      <div class="field"><label>Email</label><input type="email" id="li-email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="field"><label>Password</label><input type="password" id="li-pw" placeholder="••••••••" autocomplete="current-password"></div>
+      <div id="li-err" class="alert alert-err hide" style="margin-bottom:10px"></div>
+      <button class="btn btn-primary btn-full" id="li-btn" onclick="doLogin()">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- アプリ本体（ログイン後に表示） -->
+<div id="app" class="app hide">
+  <!-- サイドバー -->
+  <nav class="sidebar" id="sidebar">
+    <div class="user-info">
+      <div class="user-name" id="sb-name"></div>
+      <div class="user-sub" id="sb-sub"></div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
+    <button class="nav-btn" data-page="request" onclick="goto('request')">Request</button>
+    <button class="nav-btn" data-page="engineer" id="nav-engineer" onclick="goto('engineer')" style="display:none">Engineer</button>
+    <button class="nav-btn" data-page="admin" id="nav-admin" onclick="goto('admin')" style="display:none">Admin</button>
+    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
+    <div class="sec" style="margin-top:4px" id="sb-sys-sec">System</div>
+    <div class="sys-row">
+      <div class="dot dot-grn"></div>
+      <span style="font-size:12.5px;color:var(--txt)" id="sb-sysname">Shift Management</span>
+    </div>
+    <div style="flex:1"></div>
+    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
+    <button class="nav-btn" onclick="doLogout()" style="color:var(--tx3)">Sign out</button>
+  </nav>
+
+  <!-- メインコンテンツ -->
+  <main class="main full" id="main-content">
+    <!-- 右上の設定ボタン -->
+    <div style="position:absolute;top:16px;right:20px;display:flex;gap:6px;z-index:50">
+      <button class="btn btn-secondary btn-sm" onclick="goto('settings')" title="Settings">⚙</button>
+    </div>
+
+    <!-- リクエストページ -->
+    <div id="page-request" class="page-content hide">
+      <h1 id="req-title">Request Changes</h1>
+      <div class="prio-row" id="prio-row">
+        <button class="prio-btn" data-p="low" onclick="setPrio('low')">Low</button>
+        <button class="prio-btn sel-mid" data-p="mid" onclick="setPrio('mid')">Med</button>
+        <button class="prio-btn" data-p="high" onclick="setPrio('high')">High</button>
+        <button class="prio-btn" data-p="urgent" onclick="setPrio('urgent')">Urgent</button>
+      </div>
+      <div class="field">
+        <label id="req-instr-lbl">Instructions</label>
+        <textarea id="req-instruction" rows="6" placeholder="e.g.&#10;· Change the header background color&#10;· Make KPI numbers larger&#10;· Add row hover highlight"></textarea>
+      </div>
+      <div class="field">
+        <label id="req-cmt-lbl">Comment to Engineer (optional)</label>
+        <textarea id="req-comment" rows="3" placeholder="Add any supplementary notes here"></textarea>
+      </div>
+      <div id="req-progress" class="hide">
+        <div class="progress-bar"><div class="progress-fill" id="req-bar" style="width:0%"></div></div>
+        <div class="loader"><div class="spinner"></div><span id="req-step">Processing...</span></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doRequest()" id="req-btn">Send to AI</button>
+      <div id="req-result" class="hide" style="margin-top:12px"></div>
+    </div>
+
+    <!-- エンジニアページ -->
+    <div id="page-engineer" class="page-content hide">
+      <h1>Engineer Review</h1>
+      <div id="eng-empty" class="card" style="text-align:center;padding:32px">
+        <span style="color:var(--tx2)">Send a request to see review content here</span>
+      </div>
+      <div id="eng-content" class="hide">
+        <div class="metrics" id="eng-metrics"></div>
+        <div id="eng-badge"></div>
+        <div class="sec">User Instructions</div>
+        <div class="card bl" id="eng-instruction"></div>
+        <div id="eng-comment-box" class="hide">
+          <div class="card-sm am" id="eng-comment-content"></div>
+        </div>
+        <div class="sec">AI Report</div>
+        <div class="card am" id="eng-report"></div>
+        <div class="sec">Code Changes</div>
+        <div class="tabs-bar">
+          <button class="tab-btn active" onclick="showTab('diff')">Diff</button>
+          <button class="tab-btn" onclick="showTab('before')">Before</button>
+          <button class="tab-btn" onclick="showTab('after')">After</button>
+        </div>
+        <div id="tab-diff" class="tab-panel active"><div class="diff-wrap" id="eng-diff"></div></div>
+        <div id="tab-before" class="tab-panel"><pre id="eng-before"></pre></div>
+        <div id="tab-after" class="tab-panel"><pre id="eng-after"></pre></div>
+        <div class="sec" style="margin-top:14px">Decision</div>
+        <div class="row">
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:3px">Approve & Deploy</div>
+            <div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">Backup taken before deploy</div>
+            <button class="btn btn-primary btn-full" onclick="doApprove()">Approve</button>
+            <div id="approve-result" class="hide" style="margin-top:8px"></div>
+          </div>
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:3px">Reject & Regenerate</div>
+            <div style="font-size:11.5px;color:var(--tx3);margin-bottom:10px">Send correction to AI</div>
+            <textarea id="eng-feedback" rows="3" style="width:100%;padding:8px;background:var(--inb);border:1.5px solid var(--inr);border-radius:9px;color:var(--txt);font-family:inherit;font-size:13px;outline:none;margin-bottom:8px" placeholder="e.g.: Make the button green"></textarea>
+            <button class="btn btn-secondary btn-full" onclick="doReject()" id="regen-btn">Regenerate</button>
+            <div id="regen-progress" class="hide" style="margin-top:8px">
+              <div class="loader"><div class="spinner"></div><span>Regenerating...</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理ページ -->
+    <div id="page-admin" class="page-content hide">
+      <h1>Admin</h1>
+      <div class="tabs-bar">
+        <button class="tab-btn active" onclick="showAdminTab('users')">Users</button>
+        <button class="tab-btn" onclick="showAdminTab('logs')">Activity Log</button>
+        <button class="tab-btn" onclick="showAdminTab('cost')">Cost</button>
+      </div>
+      <div id="admin-tab-users" class="tab-panel active">
+        <div class="sec">User List</div>
+        <div id="admin-users-list"></div>
+        <div class="sec" style="margin-top:20px">Add User</div>
+        <div class="card" style="padding:16px 18px">
+          <div class="row"><div class="field"><label>Name</label><input type="text" id="nu-name"></div><div class="field"><label>Email</label><input type="email" id="nu-email"></div></div>
+          <div class="row"><div class="field"><label>Password</label><input type="password" id="nu-pw"></div><div class="field"><label>Role</label><select id="nu-role"><option value="requester">Requester</option><option value="engineer">Engineer</option><option value="admin">Admin</option></select></div></div>
+          <button class="btn btn-primary" onclick="doAddUser()">Add User</button>
+          <div id="nu-result" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div id="admin-tab-logs" class="tab-panel" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="sec" style="margin:0;border:none">Activity Log</div>
+          <button class="btn btn-secondary btn-sm" onclick="downloadCsv()">Download CSV</button>
+        </div>
+        <div id="admin-logs-list"></div>
+      </div>
+      <div id="admin-tab-cost" class="tab-panel" style="display:none">
+        <div class="sec">This Month</div>
+        <div class="metrics" id="admin-cost-monthly"></div>
+        <div class="sec" style="margin-top:16px">Recent Requests</div>
+        <div id="admin-cost-history"></div>
+      </div>
+    </div>
+
+    <!-- 設定ページ -->
+    <div id="page-settings" class="page-content hide">
+      <h1>Settings</h1>
+      <div class="sec">Appearance</div>
+      <div class="row" style="margin-bottom:14px">
+        <button class="btn btn-secondary" id="btn-light" onclick="setTheme('light')">Light</button>
+        <button class="btn btn-primary" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+      </div>
+      <div class="sec">Language</div>
+      <div class="row" style="margin-bottom:14px">
+        <button class="btn btn-secondary" id="btn-ja" onclick="setLang('ja')">日本語</button>
+        <button class="btn btn-primary" id="btn-en" onclick="setLang('en')">English</button>
+      </div>
+      <div class="sec">Change Password</div>
+      <div class="card" style="padding:16px 18px">
+        <div class="field"><label>Current Password</label><input type="password" id="cp-old" placeholder="••••••••"></div>
+        <div class="field"><label>New Password</label><input type="password" id="cp-new" placeholder="••••••••"></div>
+        <div class="field"><label>Confirm New Password</label><input type="password" id="cp-new2" placeholder="••••••••"></div>
+        <button class="btn btn-primary" onclick="doChangePw()">Change Password</button>
+        <div id="cp-result" style="margin-top:8px"></div>
+      </div>
+      <div class="sec" id="set-sysinfo-sec">System Info</div>
+      <div class="card" id="set-sysinfo" style="padding:0 16px">
+        <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--brd);gap:12px">
+          <span style="font-size:9.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;min-width:70px">Demo URL</span>
+          <a href="https://nobushi-shift.webdav-lolipop.jp/demo_codebrige.html" target="_blank" style="font-size:13px;color:var(--txt);text-decoration:underline">nobushi-shift.webdav-lolipop.jp/demo_codebrige.html</a>
+        </div>
+        <div style="display:flex;align-items:center;padding:9px 0;gap:12px">
+          <span style="font-size:9.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;min-width:70px">Source</span>
+          <code style="font-size:11.5px;color:var(--tx2);background:var(--bg2);padding:2px 6px;border-radius:4px">target_app/demo_local.html</code>
+        </div>
+      </div>
+      <div id="set-cost-sec" class="hide">
+        <div class="sec">Cost This Month</div>
+        <div id="set-cost-val" class="card" style="padding:14px 18px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+// ── 設定 ─────────────────────────────────────────────────────────────────────
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:8000'
+  : '';  // 同一オリジン（App Serviceが両方配信）
+
+// ── 状態 ─────────────────────────────────────────────────────────────────────
+let S = {
+  token: localStorage.getItem('cb_token') || '',
+  user:  JSON.parse(localStorage.getItem('cb_user') || 'null'),
+  theme: localStorage.getItem('cb_theme') || 'dark',
+  lang:  localStorage.getItem('cb_lang')  || 'en',
+  page:  'request',
+  prio:  'mid',
+  result: null,
+};
+
+// ── i18n ──────────────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    request:'Request', engineer:'Engineer', admin:'Admin', settings:'Settings',
+    system:'System', signout:'Sign out',
+    req_title:'Request Changes',
+    instr:'Instructions', instr_ph:'e.g.\n· Change the header background color\n· Make KPI numbers larger',
+    cmt:'Comment to Engineer (optional)', cmt_ph:'Add any supplementary notes here',
+    send:'Send to AI', low:'Low', mid:'Med', high:'High', urgent:'Urgent',
+    analyzing:'Analyzing...', generating:'Generating code...', validating:'Validating...',
+    verifying:'Verifying...', reporting:'Creating report...',
+    code_ok:'Code generated', code_ok_sub:'An engineer is reviewing. Changes will be applied after approval.',
+    code_warn:'Engineer review required',
+    sandbox:'Sandbox', passed:'Test Passed', failed:'Test Failed',
+    debug:'Debug', lines:'Lines',
+    user_instr:'User Instructions', ai_report:'AI Report', code_diff:'Code Changes',
+    diff:'Diff', before:'Before', after:'After',
+    decision:'Decision', approve:'Approve & Deploy', approve_btn:'Approve', approved:'Deployed!',
+    reject:'Reject & Regenerate', regen:'Regenerate',
+    appearance:'Appearance', language:'Language', change_pw:'Change Password',
+    sys_info:'System Info', cost_month:'Cost This Month',
+    light:'Light', dark:'Dark',
+    cur_pw:'Current Password', new_pw:'New Password', confirm_pw:'Confirm New Password',
+    change:'Change Password', pw_changed:'Password changed',
+    priority:'Priority',
+  },
+  ja: {
+    request:'リクエスト', engineer:'エンジニア', admin:'管理', settings:'設定',
+    system:'対象システム', signout:'ログアウト',
+    req_title:'変更をリクエスト',
+    instr:'指示内容', instr_ph:'例：\n・シフト表のヘッダー色を変えたい\n・KPIの数字を大きくしたい',
+    cmt:'エンジニアへのコメント（任意）', cmt_ph:'補足情報があれば記入してください',
+    send:'AIに送信', low:'低', mid:'中', high:'高', urgent:'緊急',
+    analyzing:'解析中...', generating:'コード生成中...', validating:'検証中...',
+    verifying:'確認中...', reporting:'レポート作成中...',
+    code_ok:'コードを生成しました', code_ok_sub:'エンジニアが確認中です。承認後に本番環境へ反映されます。',
+    code_warn:'エンジニアの確認が必要です',
+    sandbox:'サンドボックス', passed:'テスト成功', failed:'テスト失敗',
+    debug:'デバッグ試行', lines:'変更行数',
+    user_instr:'ユーザーからの指示', ai_report:'AIレポート', code_diff:'コード変更内容',
+    diff:'差分', before:'変更前', after:'変更後',
+    decision:'判断', approve:'承認してデプロイ', approve_btn:'承認', approved:'デプロイ完了！',
+    reject:'差し戻して再生成', regen:'再生成',
+    appearance:'外観', language:'言語', change_pw:'パスワード変更',
+    sys_info:'システム情報', cost_month:'今月のコスト',
+    light:'ライト', dark:'ダーク',
+    cur_pw:'現在のパスワード', new_pw:'新しいパスワード', confirm_pw:'新しいパスワード（確認）',
+    change:'変更', pw_changed:'パスワードを変更しました',
+    priority:'重要度',
+  }
+};
+function t(k){ return (I18N[S.lang]||I18N.en)[k] || k }
+
+// ── テーマ ────────────────────────────────────────────────────────────────────
+function applyTheme(th){
+  S.theme=th; localStorage.setItem('cb_theme',th);
+  document.documentElement.setAttribute('data-theme', th==='light'?'light':'');
+  document.getElementById('btn-light').className='btn '+(th==='light'?'btn-primary':'btn-secondary');
+  document.getElementById('btn-dark').className='btn '+(th==='dark'?'btn-primary':'btn-secondary');
+}
+function setTheme(th){ applyTheme(th) }
+
+// ── 言語 ──────────────────────────────────────────────────────────────────────
+function applyLang(lg){
+  S.lang=lg; localStorage.setItem('cb_lang',lg);
+  document.getElementById('btn-ja').className='btn '+(lg==='ja'?'btn-primary':'btn-secondary');
+  document.getElementById('btn-en').className='btn '+(lg==='en'?'btn-primary':'btn-secondary');
+  updateText();
+}
+function setLang(lg){ applyLang(lg) }
+
+function updateText(){
+  const lg = S.lang;
+  document.querySelectorAll('[data-page="request"]').forEach(el=>el.textContent=t('request'));
+  document.querySelectorAll('[data-page="engineer"]').forEach(el=>el.textContent=t('engineer'));
+  document.querySelectorAll('[data-page="admin"]').forEach(el=>el.textContent=t('admin'));
+  document.getElementById('sb-sys-sec') && (document.getElementById('sb-sys-sec').textContent=t('system'));
+  document.getElementById('req-title') && (document.getElementById('req-title').textContent=t('req_title'));
+  document.getElementById('req-instr-lbl') && (document.getElementById('req-instr-lbl').textContent=t('instr'));
+  document.getElementById('req-instruction') && (document.getElementById('req-instruction').placeholder=t('instr_ph'));
+  document.getElementById('req-cmt-lbl') && (document.getElementById('req-cmt-lbl').textContent=t('cmt'));
+  document.getElementById('req-comment') && (document.getElementById('req-comment').placeholder=t('cmt_ph'));
+  document.getElementById('req-btn') && (document.getElementById('req-btn').textContent=t('send'));
+  const pb = ['low','mid','high','urgent'];
+  pb.forEach(p=>{ const el=document.querySelector(`.prio-btn[data-p="${p}"]`); if(el) el.textContent=t(p); });
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path, opts={}, timeout=180000){
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), timeout);
+  const headers = {'Content-Type':'application/json'};
+  if(S.token) headers['Authorization'] = 'Bearer '+S.token;
+  try{
+    const r = await fetch(API+path, {...opts, headers:{...headers,...(opts.headers||{})}, signal:ctrl.signal});
+    clearTimeout(tid);
+    if(r.status===401){ doLogout(); return null }
+    if(!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e){ clearTimeout(tid); throw e }
+}
+
+// ── ログイン ──────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById('li-email').value;
+  const pw    = document.getElementById('li-pw').value;
+  const err   = document.getElementById('li-err');
+  const btn   = document.getElementById('li-btn');
+  if(!email||!pw){ err.textContent='Please enter email and password'; err.classList.remove('hide'); return }
+  btn.textContent='Signing in...'; btn.disabled=true;
+  try{
+    const data = await api('/api/login',{method:'POST',body:JSON.stringify({email,password:pw})});
+    if(!data) return;
+    S.token=data.token; S.user=data.user;
+    localStorage.setItem('cb_token',S.token);
+    localStorage.setItem('cb_user',JSON.stringify(S.user));
+    initApp();
+  } catch(e){
+    err.textContent='Invalid email or password'; err.classList.remove('hide');
+  } finally{ btn.textContent='Sign in'; btn.disabled=false }
+}
+document.getElementById('li-pw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin() });
+
+async function doLogout(){
+  await api('/api/logout',{method:'POST'}).catch(()=>{});
+  S.token=''; S.user=null; S.result=null;
+  localStorage.removeItem('cb_token'); localStorage.removeItem('cb_user');
+  document.getElementById('app').classList.add('hide');
+  document.getElementById('login-page').classList.remove('hide');
+}
+
+// ── アプリ初期化 ─────────────────────────────────────────────────────────────
+function initApp(){
+  document.getElementById('login-page').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+  const u = S.user;
+  document.getElementById('sb-name').textContent = u.name;
+  document.getElementById('sb-sub').textContent  = u.email+' · '+u.role;
+  document.getElementById('sb-sysname').textContent = S.lang==='ja'?'シフト管理':'Shift Management';
+  // ロール別ナビ
+  if(u.role==='engineer'||u.role==='admin') document.getElementById('nav-engineer').style.display='block';
+  if(u.role==='admin') document.getElementById('nav-admin').style.display='block';
+  // 設定：エンジニア/管理者のみシステム情報表示
+  if(u.role==='engineer'||u.role==='admin') document.getElementById('set-sysinfo-sec').style.display='block';
+  else { document.getElementById('set-sysinfo-sec').style.display='none'; document.getElementById('set-sysinfo').style.display='none'; }
+  if(u.role==='admin') document.getElementById('set-cost-sec').classList.remove('hide');
+  applyTheme(S.theme);
+  applyLang(S.lang);
+  // モバイルではサイドバーを初期閉じ
+  if(window.innerWidth<=768){ closeSidebar() } else { openSidebar() }
+  goto('request');
+}
+
+// ── ナビゲーション ───────────────────────────────────────────────────────────
+function goto(page){
+  S.page=page;
+  document.querySelectorAll('.page-content').forEach(el=>el.classList.add('hide'));
+  const target=document.getElementById('page-'+page);
+  if(target) target.classList.remove('hide');
+  document.querySelectorAll('.nav-btn').forEach(el=>{
+    el.classList.toggle('active', el.dataset.page===page);
+  });
+  if(page==='admin') loadAdmin();
+  if(page==='engineer') showEngContent();
+  if(page==='settings') loadCostSetting();
+  if(window.innerWidth<=768) closeSidebar();
+}
+
+// ── ハンバーガー ─────────────────────────────────────────────────────────────
+let sidebarOpen = false;
+function openSidebar(){ sidebarOpen=true; document.getElementById('sidebar').classList.remove('collapsed'); document.getElementById('hamburger').textContent='✕'; document.getElementById('main-content').style.marginLeft=window.innerWidth>768?'240px':'0' }
+function closeSidebar(){ sidebarOpen=false; document.getElementById('sidebar').classList.add('collapsed'); document.getElementById('hamburger').textContent='☰'; document.getElementById('main-content').style.marginLeft='0' }
+document.getElementById('hamburger').addEventListener('click',()=>{ sidebarOpen?closeSidebar():openSidebar() });
+
+// ── 重要度 ────────────────────────────────────────────────────────────────────
+function setPrio(p){
+  S.prio=p;
+  document.querySelectorAll('.prio-btn').forEach(el=>{
+    el.className='prio-btn'+(el.dataset.p===p?' sel-'+p:'');
+  });
+}
+
+// ── AI リクエスト ─────────────────────────────────────────────────────────────
+async function doRequest(){
+  const instr = document.getElementById('req-instruction').value.trim();
+  const cmt   = document.getElementById('req-comment').value.trim();
+  if(!instr){ alert(t('instr')+' is required'); return }
+  const btn=document.getElementById('req-btn');
+  const prog=document.getElementById('req-progress');
+  const res=document.getElementById('req-result');
+  btn.disabled=true; btn.textContent='...';
+  prog.classList.remove('hide'); res.classList.add('hide');
+  // ステップ表示
+  const steps=[t('analyzing'),t('generating'),t('validating'),t('verifying'),t('reporting')];
+  let si=0;
+  const stepEl=document.getElementById('req-step');
+  const barEl=document.getElementById('req-bar');
+  const iv=setInterval(()=>{
+    if(si<steps.length){ stepEl.textContent=steps[si]; barEl.style.width=((si+1)/steps.length*90)+'%'; si++ }
+  },1800);
+  try{
+    const data=await api('/api/pipeline',{method:'POST',body:JSON.stringify({instruction:instr,priority:S.prio,eng_comment:cmt})},300000);
+    clearInterval(iv); barEl.style.width='100%';
+    if(!data) return;
+    S.result=data;
+    res.innerHTML=data.success
+      ?`<div class="card gn"><strong style="color:var(--grn)">${t('code_ok')}</strong><br><span style="font-size:12.5px;color:var(--tx2)">${t('code_ok_sub')}</span></div>`
+      :`<div class="card am"><strong style="color:var(--amb)">${t('code_warn')}</strong></div>`;
+    res.classList.remove('hide');
+  } catch(e){
+    clearInterval(iv);
+    res.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;
+    res.classList.remove('hide');
+  } finally{
+    btn.disabled=false; btn.textContent=t('send');
+    prog.classList.add('hide');
+  }
+}
+
+// ── エンジニアレビュー ─────────────────────────────────────────────────────────
+function showEngContent(){
+  if(!S.result){ document.getElementById('eng-empty').classList.remove('hide'); document.getElementById('eng-content').classList.add('hide'); return }
+  document.getElementById('eng-empty').classList.add('hide');
+  document.getElementById('eng-content').classList.remove('hide');
+  const r=S.result;
+  // メトリクス
+  const dot=r.success?'<span class="dot dot-grn"></span>':'<span class="dot dot-red"></span>';
+  const lbl=r.success?t('passed'):t('failed');
+  document.getElementById('eng-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">${t('sandbox')}</div><div style="margin-top:8px">${dot}<span style="font-size:13px;font-weight:600">${lbl}</span></div></div>
+    <div class="metric"><div class="metric-label">${t('debug')}</div><div class="metric-val">${r.iterations}</div></div>
+    <div class="metric"><div class="metric-label">${t('lines')}</div><div class="metric-val">${r.changed_lines}</div></div>`;
+  const pColors={low:'var(--grn)',mid:'var(--txt)',high:'var(--amb)',urgent:'var(--red)'};
+  const pc=pColors[S.prio]||'var(--txt)';
+  document.getElementById('eng-badge').innerHTML=`<span class="badge" style="background:${pc}22;color:${pc};border:1px solid ${pc}44">${t('priority')}: ${t(S.prio)}</span>`;
+  document.getElementById('eng-instruction').innerHTML=`<span style="font-size:13.5px;line-height:1.65">${esc(r.original_code?'':'')}${esc(document.getElementById('req-instruction').value)}</span>`;
+  document.getElementById('eng-report').innerHTML=r.report;
+  document.getElementById('eng-diff').innerHTML=buildDiff(r.original_code,r.new_code);
+  document.getElementById('eng-before').textContent=r.original_code;
+  document.getElementById('eng-after').textContent=r.new_code;
+}
+
+function buildDiff(a,b){
+  if(!a||!b) return '<span class="dc">No data</span>';
+  const al=a.split('\n'), bl=b.split('\n'), out=[];
+  // 簡易unified diff表示（実際のdiffはサーバー側でやってもいいが、ここではラインベース）
+  let i=0,j=0;
+  while(i<al.length||j<bl.length){
+    if(i<al.length&&j<bl.length&&al[i]===bl[j]){ out.push('<span class="dc">'+esc(al[i])+'</span>'); i++;j++; }
+    else if(i<al.length&&(j>=bl.length||al[i]!==bl[j])){ out.push('<span class="dd">-'+esc(al[i])+'</span>'); i++; }
+    else{ out.push('<span class="da">+'+esc(bl[j])+'</span>'); j++; }
+  }
+  return out.slice(0,200).join('\n');
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+async function doApprove(){
+  if(!S.result) return;
+  const btn=document.querySelector('[onclick="doApprove()"]');
+  btn.disabled=true; btn.textContent='...';
+  try{
+    await api('/api/approve',{method:'POST',body:JSON.stringify({new_code:S.result.new_code, instruction:document.getElementById('req-instruction').value})});
+    document.getElementById('approve-result').innerHTML='<div class="alert alert-ok">'+t('approved')+'</div>';
+    document.getElementById('approve-result').classList.remove('hide');
+  } catch(e){ document.getElementById('approve-result').innerHTML='<div class="alert alert-err">'+e.message+'</div>'; document.getElementById('approve-result').classList.remove('hide'); }
+  finally{ btn.disabled=false; btn.textContent=t('approve_btn') }
+}
+
+async function doReject(){
+  const fb=document.getElementById('eng-feedback').value.trim();
+  if(!fb||!S.result) return;
+  const btn=document.getElementById('regen-btn');
+  const prog=document.getElementById('regen-progress');
+  btn.classList.add('hide'); prog.classList.remove('hide');
+  try{
+    const data=await api('/api/reject',{method:'POST',body:JSON.stringify({instruction:document.getElementById('req-instruction').value, original_code:S.result.original_code, feedback:fb})},300000);
+    if(!data) return;
+    S.result=data; showEngContent();
+  } catch(e){ alert(e.message) }
+  finally{ btn.classList.remove('hide'); prog.classList.add('hide') }
+}
+
+function showTab(name){
+  ['diff','before','after'].forEach(n=>{
+    document.getElementById('tab-'+n).classList.toggle('active',n===name);
+  });
+  document.querySelectorAll('.tabs-bar .tab-btn').forEach((btn,i)=>{
+    btn.classList.toggle('active',['diff','before','after'][i]===name);
+  });
+}
+
+// ── 管理 ──────────────────────────────────────────────────────────────────────
+async function loadAdmin(){
+  const tab=document.querySelector('#admin-tab-users');
+  if(!tab) return;
+  loadUsers(); loadLogs(); loadCost();
+}
+
+async function loadUsers(){
+  try{
+    const users=await api('/api/users');
+    if(!users) return;
+    const el=document.getElementById('admin-users-list');
+    el.innerHTML=users.map(u=>`
+      <div class="card-sm" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <div style="flex:2;min-width:120px"><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx3)">${esc(u.email)}</div></div>
+        <select onchange="updateRole(${u.id},this.value)" style="flex:1;padding:5px 8px;background:var(--inb);border:1px solid var(--inr);border-radius:7px;color:var(--txt);font-size:12px;min-width:100px">
+          ${['requester','engineer','admin'].map(r=>`<option${r===u.role?' selected':''}>${r}</option>`).join('')}
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="resetPw(${u.id})">Reset PW</button>
+        ${u.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="toggleUser(${u.id},${!u.active})">${u.active?'Disable':'Enable'}</button>`:''}
+      </div>`).join('');
+  } catch(e){}
+}
+
+async function updateRole(uid,role){ await api(`/api/users/${uid}/role`,{method:'PUT',body:JSON.stringify({role})}); loadUsers() }
+async function resetPw(uid){
+  const data=await api(`/api/users/${uid}/reset-password`,{method:'POST'});
+  if(data) alert('Temp password: '+data.temp_password);
+}
+async function toggleUser(uid,active){ await api(`/api/users/${uid}/active?active=${active}`,{method:'PUT'}); loadUsers() }
+async function doAddUser(){
+  const name=document.getElementById('nu-name').value; const email=document.getElementById('nu-email').value;
+  const pw=document.getElementById('nu-pw').value; const role=document.getElementById('nu-role').value;
+  const res=document.getElementById('nu-result');
+  try{
+    await api('/api/users',{method:'POST',body:JSON.stringify({name,email,password:pw,role})});
+    res.innerHTML='<div class="alert alert-ok">User added</div>'; loadUsers();
+  } catch(e){ res.innerHTML='<div class="alert alert-err">'+e.message+'</div>' }
+}
+
+async function loadLogs(){
+  try{
+    const logs=await api('/api/logs');
+    if(!logs) return;
+    const el=document.getElementById('admin-logs-list');
+    el.innerHTML='<div class="card" style="padding:0 2px;overflow-x:auto"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th><th>Cost</th></tr></thead><tbody>'+
+      logs.slice(0,100).map(r=>`<tr><td style="white-space:nowrap;font-size:11.5px">${r.ts}</td><td style="font-size:12px">${esc(r.user_name||'')}</td><td style="font-size:12px">${esc(r.action)}</td><td style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc((r.detail||'').slice(0,60))}</td><td style="font-size:11px">$${(r.cost_usd||0).toFixed(5)}</td></tr>`).join('')+
+      '</tbody></table></div>';
+  } catch(e){}
+}
+
+async function downloadCsv(){
+  const r=await fetch(API+'/api/logs/csv',{headers:{Authorization:'Bearer '+S.token}});
+  const blob=await r.blob();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='activity_log.csv'; a.click();
+}
+
+async function loadCost(){
+  try{
+    const data=await api('/api/cost');
+    if(!data) return;
+    const m=data.monthly||{};
+    document.getElementById('admin-cost-monthly').innerHTML=`
+      <div class="metric"><div class="metric-label">Total</div><div class="metric-val" style="font-size:20px">$${(m.total||0).toFixed(4)}</div><div class="metric-unit">USD</div></div>
+      <div class="metric"><div class="metric-label">Input Tokens</div><div class="metric-val" style="font-size:20px">${parseInt(m.inp||0).toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">Output Tokens</div><div class="metric-val" style="font-size:20px">${parseInt(m.out||0).toLocaleString()}</div></div>`;
+    const el=document.getElementById('admin-cost-history');
+    el.innerHTML='<div class="card" style="padding:0 2px;overflow-x:auto"><table><thead><tr><th>Time</th><th>Request</th><th>Input</th><th>Output</th><th>Cost</th></tr></thead><tbody>'+
+      (data.history||[]).map(r=>`<tr><td style="font-size:11.5px;white-space:nowrap">${r.ts}</td><td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc((r.request_text||'').slice(0,50))}</td><td style="font-size:12px">${r.input_tokens||0}</td><td style="font-size:12px">${r.output_tokens||0}</td><td style="font-size:12px">$${(r.cost_usd||0).toFixed(5)}</td></tr>`).join('')+
+      '</tbody></table></div>';
+  } catch(e){}
+}
+
+function showAdminTab(name){
+  ['users','logs','cost'].forEach(n=>{
+    const p=document.getElementById(`admin-tab-${n}`); if(p) p.style.display=n===name?'block':'none';
+  });
+  document.querySelectorAll('#page-admin .tab-btn').forEach((btn,i)=>{
+    btn.classList.toggle('active',['users','logs','cost'][i]===name);
+  });
+}
+
+async function loadCostSetting(){
+  if(S.user&&(S.user.role==='admin'||S.user.role==='engineer')){
+    try{
+      const data=await api('/api/cost');
+      if(!data) return;
+      const m=data.monthly||{};
+      document.getElementById('set-cost-val').innerHTML=`<span style="font-size:22px;font-weight:300">$${(m.total||0).toFixed(4)}</span> <span style="font-size:13px;color:var(--tx3)">USD this month</span>`;
+    } catch(e){}
+  }
+}
+
+// ── パスワード変更 ────────────────────────────────────────────────────────────
+async function doChangePw(){
+  const old=document.getElementById('cp-old').value;
+  const nw=document.getElementById('cp-new').value;
+  const nw2=document.getElementById('cp-new2').value;
+  const res=document.getElementById('cp-result');
+  if(nw!==nw2){ res.innerHTML='<div class="alert alert-err">Passwords do not match</div>'; return }
+  try{
+    await api('/api/change-password',{method:'POST',body:JSON.stringify({old_password:old,new_password:nw})});
+    res.innerHTML='<div class="alert alert-ok">'+t('pw_changed')+'</div>';
+    document.getElementById('cp-old').value=''; document.getElementById('cp-new').value=''; document.getElementById('cp-new2').value='';
+  } catch(e){ res.innerHTML='<div class="alert alert-err">'+e.message+'</div>' }
+}
+
+// ── 起動 ──────────────────────────────────────────────────────────────────────
+(async function init(){
+  applyTheme(S.theme); applyLang(S.lang);
+  if(S.token&&S.user){
+    try{
+      const me=await api('/api/me');
+      if(me){ S.user=me; localStorage.setItem('cb_user',JSON.stringify(me)); initApp(); return }
+    } catch(e){}
+  }
+  document.getElementById('login-page').classList.remove('hide');
+})();
+</script>
+</body>
+</html>

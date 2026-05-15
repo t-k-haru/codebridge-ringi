@@ -1,0 +1,13 @@
+<step title="Incoming Request" date="2026-05-14T14:29:45.557" instance="51f7d5" url="/api/publish?type=zip&amp;async=True" method="POST" type="request" pid="833,1,17" Accept="*/*" Host="codebridge-t-k-haru.scm.azurewebsites.net" User-Agent="AZURECLI/2.86.0 (HOMEBREW)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Cookie="ARRAffinity=51f7d50ebb3aaef6dc8dc5c230072f869db8a7342ae1196cc78e4b3b1ab2053e; ARRAffinitySameSite=51f7d50ebb3aaef6dc8dc5c230072f869db8a7342ae1196cc78e4b3b1ab2053e" Content-Length="14438" x-ms-client-request-id="53f92554-4fa1-11f1-bb5d-ae945a89a8df" x-ms-artifact-checksum="4b776df48190f5cd6acfc701d40733dca238dfabaca7ffb0565a41bf3603a57c" X-ARR-LOG-ID="53f92554-4fa1-11f1-bb5d-ae945a89a8df" CLIENT-IP="1.21.50.114:27482" X-SITE-DEPLOYMENT-ID="codebridge-t-k-haru" WAS-DEFAULT-HOSTNAME="codebridge-t-k-haru.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?type=zip&amp;async=True" X-Client-IP="1.21.50.114" X-Client-Port="27482" >
+  <step title="OneDeploy" date="2026-05-14T14:29:45.665" >
+    <step title="Starting PushDeployAsync" date="2026-05-14T14:29:45.813" /><!-- duration: 19ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/a080506c-2151-48af-86d2-904510ac35d7.zip" date="2026-05-14T14:29:46.004" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/a080506c-2151-48af-86d2-904510ac35d7.zip" date="2026-05-14T14:29:46.039" /><!-- duration: 4ms -->
+    </step><!-- duration: 135ms -->
+    <step title="Start deployment in the background" date="2026-05-14T14:29:46.201" >
+      <step title="Acquiring Deployment Lock" date="2026-05-14T14:29:46.430" /><!-- duration: 9ms -->
+      <step title="Acquired Deployment Lock" date="2026-05-14T14:29:46.548" /><!-- duration: 76ms -->
+    </step><!-- duration: 730ms -->
+  </step><!-- duration: 1444ms -->
+  <step title="Outgoing response" date="2026-05-14T14:29:47.119" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 9ms -->
+</step><!-- duration: 1579ms -->
