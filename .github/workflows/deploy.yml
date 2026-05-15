@@ -1,41 +1,28 @@
-name: Deploy CodeBridge
+name: Deploy Backend to Azure App Service
 
 on:
   push:
     branches: [main]
 
 jobs:
-  # ── App Service（FastAPI バックエンド）───────────────────────────────────────
   deploy-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to App Service
         run: |
           zip -r backend.zip . \
             -x "frontend/*" "*.zip" ".git/*" ".env" \
-            "__pycache__/*" "*.pyc" ".DS_Store" "webapp_logs/*"
+            "__pycache__/*" "*.pyc" ".DS_Store"
           az webapp deploy \
             --name codebridge-t-k-haru \
             --resource-group codebridge-rg \
             --src-path backend.zip \
             --type zip \
             --async true
-
-  # ── Static Web Apps（HTML フロントエンド）────────────────────────────────────
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
-          app_location: frontend
-          skip_api_build: true
