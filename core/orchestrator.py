@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-メインエージェントパイプライン。トークン数とコストも記録する。
-"""
 from dataclasses import dataclass, field
 from typing import Optional
 from core.azure_client import (
@@ -26,8 +23,6 @@ class TaskResult:
     input_tokens: int = 0
     output_tokens: int = 0
     cost_usd: float = 0.0
-    _priority: str = "mid"
-    _eng_comment: str = ""
 
     def __post_init__(self):
         if self.changed_lines == 0:
@@ -45,7 +40,6 @@ def run_pipeline(instruction: str, base_code: Optional[str] = None) -> TaskResul
     raw = generate_code(instruction, original)
     current = extract_code_block(raw)
     tok_in, tok_out = get_last_token_usage()
-
     last_out = last_err = ""
     for i in range(MAX_DEBUG):
         out, err = execute_code(current)
@@ -57,24 +51,14 @@ def run_pipeline(instruction: str, base_code: Optional[str] = None) -> TaskResul
             current = extract_code_block(raw2)
             ti2, to2 = get_last_token_usage()
             tok_in += ti2; tok_out += to2
-
     raw_rep = generate_report(instruction, original, current, last_out, last_err, i+1)
     ti3, to3 = get_last_token_usage()
     tok_in += ti3; tok_out += to3
-
     from core.auth import estimate_cost
     cost = estimate_cost(tok_in, tok_out)
-
     return TaskResult(
-        instruction=instruction,
-        original_code=original,
-        new_code=current,
-        test_output=last_out,
-        test_error=last_err,
-        report=raw_rep,
-        iterations=i+1,
-        success=not bool(last_err),
-        input_tokens=tok_in,
-        output_tokens=tok_out,
-        cost_usd=cost,
+        instruction=instruction, original_code=original, new_code=current,
+        test_output=last_out, test_error=last_err, report=raw_rep,
+        iterations=i+1, success=not bool(last_err),
+        input_tokens=tok_in, output_tokens=tok_out, cost_usd=cost,
     )
