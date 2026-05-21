@@ -1,832 +1,295 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CodeBridge</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodeBridge Ringi</title>
 <style>
-/* ── リセット & ベース ─────────────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#111113;--bg2:#1c1c1e;--sfc:rgba(28,28,30,0.97);--sfc2:rgba(38,38,40,0.98);
-  --brd:rgba(255,255,255,0.12);--glb:rgba(255,255,255,0.10);
-  --txt:#f5f5f7;--tx2:#d1d1d6;--tx3:#8e8e93;
-  --inb:rgba(44,44,46,0.98);--inr:rgba(255,255,255,0.20);
-  --pbg:#f5f5f7;--ptxt:#111113;
-  --shd:0 4px 24px rgba(0,0,0,0.55);
-  --grn:#34c759;--amb:#ff9500;--red:#ff3b30;
-  --r:13px;--r-sm:10px;
+  --bg:#0f1117;--sfc:#1a1d27;--sfc2:#22263a;--bdr:#2e3248;
+  --txt:#e8eaf6;--txt2:#9499b5;--accent:#5c7cfa;--accent2:#4c6ef5;
+  --green:#51cf66;--red:#ff6b6b;--yellow:#ffd43b;--orange:#ff922b;
+  --radius:10px;
 }
-[data-theme="light"]{
-  --bg:#f2f2f7;--bg2:#e5e5ea;--sfc:rgba(255,255,255,0.96);--sfc2:rgba(242,242,247,0.98);
-  --brd:rgba(0,0,0,0.09);--glb:rgba(255,255,255,0.85);
-  --txt:#111113;--tx2:#3a3a3c;--tx3:#6d6d72;
-  --inb:#ffffff;--inr:rgba(0,0,0,0.22);
-  --pbg:#111113;--ptxt:#ffffff;
-  --shd:0 2px 12px rgba(0,0,0,0.09);
-}
-html,body{
-  background:var(--bg);color:var(--txt);
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
-  -webkit-font-smoothing:antialiased;min-height:100vh;
-  transition:background .15s,color .15s;
-}
-/* ── レイアウト ──────────────────────────────────────────────────── */
-.app{display:flex;min-height:100vh}
-.sidebar{
-  width:240px;flex-shrink:0;
-  background:var(--sfc);
-  border-right:1px solid var(--brd);
-  padding:20px 14px;
-  display:flex;flex-direction:column;gap:4px;
-  position:fixed;top:0;left:0;height:100vh;
-  z-index:100;overflow-y:auto;
-  transition:transform .2s ease;
-}
-.sidebar.collapsed{transform:translateX(-100%)}
-.main{
-  flex:1;margin-left:240px;padding:24px 28px 48px;
-  max-width:1060px;transition:margin-left .2s;
-}
-.main.full{margin-left:0}
-/* ── ハンバーガー ────────────────────────────────────────────────── */
-.hamburger{
-  position:fixed;top:14px;left:14px;z-index:200;
-  width:36px;height:36px;border-radius:9px;
-  background:var(--sfc);border:1px solid var(--brd);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:16px;box-shadow:var(--shd);
-  transition:all .15s;color:var(--txt);
-}
-.hamburger:hover{opacity:.8}
-/* ── タイポグラフィ ─────────────────────────────────────────────── */
-h1{font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--txt);margin-bottom:18px;padding-top:4px}
-h2{font-size:15px;font-weight:600;color:var(--txt);margin:18px 0 8px}
-p{font-size:14px;color:var(--tx2);line-height:1.6}
-/* ── ガラスカード ────────────────────────────────────────────────── */
-.card{
-  background:var(--sfc);backdrop-filter:blur(20px);
-  border:1px solid var(--glb);border-radius:var(--r);
-  box-shadow:var(--shd);padding:16px 18px;margin-bottom:10px;
-}
-.card-sm{
-  background:var(--sfc2);border:1px solid var(--brd);
-  border-radius:var(--r-sm);padding:9px 12px;margin-bottom:6px;
-}
-.card.bl{border-left:3px solid var(--txt)}
-.card.gn{border-left:3px solid var(--grn)}
-.card.am{border-left:3px solid var(--amb)}
-.card.rd{border-left:3px solid var(--red)}
-/* ── セクションヘッダー ─────────────────────────────────────────── */
-.sec{
-  font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
-  color:var(--tx3);margin:18px 0 7px;padding-bottom:5px;
-  border-bottom:1px solid var(--brd);
-}
-/* ── ナビボタン ─────────────────────────────────────────────────── */
-.nav-btn{
-  display:block;width:100%;padding:9px 12px;border-radius:9px;
-  font-size:13px;font-weight:500;text-align:left;cursor:pointer;
-  border:none;background:transparent;color:var(--tx2);
-  transition:all .12s;
-}
-.nav-btn:hover{background:var(--sfc2);color:var(--txt)}
-.nav-btn.active{background:var(--sfc2);color:var(--txt);font-weight:600}
-/* ── ボタン ─────────────────────────────────────────────────────── */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  padding:9px 18px;border-radius:9px;font-size:13px;font-weight:500;
-  cursor:pointer;border:none;transition:opacity .12s,transform .12s;
-  font-family:inherit;white-space:nowrap;min-height:40px;
-}
-.btn-primary{background:var(--pbg);color:var(--ptxt);box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.btn-primary:hover{opacity:.80;transform:translateY(-1px)}
-.btn-secondary{background:var(--sfc2);color:var(--txt);border:1px solid var(--brd)}
-.btn-secondary:hover{opacity:.80;transform:translateY(-1px)}
-.btn-full{width:100%}
-.btn-sm{padding:6px 12px;font-size:12px;min-height:32px}
-.btn-danger{background:rgba(255,59,48,.15);color:var(--red);border:1px solid rgba(255,59,48,.3)}
-/* ── 重要度ピル ─────────────────────────────────────────────────── */
-.prio-row{display:flex;gap:6px;margin-bottom:14px}
-.prio-btn{flex:1;padding:7px 4px;border-radius:9px;font-size:12px;font-weight:600;
-  text-align:center;cursor:pointer;border:1.5px solid var(--brd);
-  background:var(--sfc2);color:var(--tx3);transition:all .12s;font-family:inherit}
-.prio-btn.sel-low{background:rgba(52,199,89,.15);color:var(--grn);border-color:var(--grn)}
-.prio-btn.sel-mid{background:var(--pbg);color:var(--ptxt);border-color:var(--pbg)}
-.prio-btn.sel-high{background:rgba(255,149,0,.15);color:var(--amb);border-color:var(--amb)}
-.prio-btn.sel-urgent{background:rgba(255,59,48,.15);color:var(--red);border-color:var(--red)}
-/* ── 入力 ────────────────────────────────────────────────────────── */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:500;color:var(--tx2);margin-bottom:5px}
-.field input,.field textarea,.field select{
-  width:100%;padding:9px 11px;
-  background:var(--inb);border:1.5px solid var(--inr);border-radius:var(--r-sm);
-  font-size:13.5px;font-family:inherit;color:var(--txt);
-  outline:none;transition:border-color .12s,box-shadow .12s;
-  -webkit-appearance:none;
-}
-.field input::placeholder,.field textarea::placeholder{color:var(--tx3)}
-.field input:focus,.field textarea:focus{
-  border-color:rgba(255,255,255,.45);
-  box-shadow:0 0 0 2px rgba(255,255,255,.07);
-}
-[data-theme="light"] .field input:focus,[data-theme="light"] .field textarea:focus{
-  border-color:rgba(0,0,0,.40);box-shadow:0 0 0 2px rgba(0,0,0,.06);
-}
-.field textarea{resize:vertical;line-height:1.5}
-/* ── メトリクス ─────────────────────────────────────────────────── */
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.metric{
-  background:var(--sfc);border:1px solid var(--glb);border-radius:12px;
-  box-shadow:var(--shd);padding:13px 14px;text-align:center;
-}
-.metric-label{font-size:9.5px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase}
-.metric-val{font-size:26px;font-weight:300;letter-spacing:-1px;color:var(--txt);line-height:1.1;margin:4px 0 2px}
-.metric-unit{font-size:11px;color:var(--tx3)}
-/* ── バッジ ─────────────────────────────────────────────────────── */
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:10px}
-/* ── タブ ────────────────────────────────────────────────────────── */
-.tabs-bar{display:flex;gap:2px;background:var(--bg2);border-radius:9px;padding:3px;margin-bottom:10px}
-.tab-btn{flex:1;padding:6px 10px;border-radius:7px;font-size:12.5px;font-weight:500;
-  cursor:pointer;border:none;background:transparent;color:var(--tx3);
-  transition:all .12s;font-family:inherit;white-space:nowrap}
-.tab-btn.active{background:var(--sfc);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.20)}
-.tab-panel{display:none}.tab-panel.active{display:block}
-/* ── Diff ────────────────────────────────────────────────────────── */
-.diff-wrap{background:var(--sfc);border:1px solid var(--glb);border-radius:var(--r);
-  padding:12px 14px;overflow-x:auto;font-family:'SF Mono',monospace;font-size:12px;line-height:1.6}
-.da{display:block;background:rgba(52,199,89,.11);color:#5be075;padding:0 6px;border-left:2px solid var(--grn)}
-.dd{display:block;background:rgba(255,59,48,.09);color:#ff6961;padding:0 6px;border-left:2px solid var(--red)}
-.dc{display:block;color:var(--tx3);padding:0 6px}
-.dh{display:block;color:var(--tx2);padding:0 6px;font-weight:600}
-[data-theme="light"] .da{color:#1a6b30}[data-theme="light"] .dd{color:#a01010}
-/* ── ローダー ────────────────────────────────────────────────────── */
-.loader{display:flex;gap:5px;align-items:center;padding:14px;color:var(--tx2);font-size:13px}
-.spinner{width:16px;height:16px;border:2px solid var(--brd);border-top-color:var(--txt);
-  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.progress-bar{height:3px;background:var(--brd);border-radius:2px;overflow:hidden;margin:6px 0 12px}
-.progress-fill{height:100%;background:var(--pbg);border-radius:2px;transition:width .3s ease}
-/* ── ログインページ ─────────────────────────────────────────────── */
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{width:100%;max-width:360px}
-/* ── ユーティリティ ─────────────────────────────────────────────── */
-.row{display:flex;gap:8px}
-.row>*{flex:1}
-.hide{display:none!important}
-.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0}
-.dot-grn{background:var(--grn)}.dot-red{background:var(--red)}
-.user-info{margin-bottom:14px}
-.user-name{font-size:14px;font-weight:600;color:var(--txt)}
-.user-sub{font-size:11px;color:var(--tx3);margin-top:2px}
-.sys-row{display:flex;align-items:center;gap:8px;padding:7px 0}
-.alert{padding:12px 14px;border-radius:var(--r-sm);font-size:13px;margin-bottom:10px}
-.alert-ok{background:rgba(52,199,89,.12);color:var(--grn)}
-.alert-err{background:rgba(255,59,48,.10);color:var(--red)}
-.alert-warn{background:rgba(255,149,0,.10);color:var(--amb)}
-pre{background:var(--bg2);border-radius:8px;padding:10px;font-size:11.5px;overflow-x:auto;color:var(--tx2)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;
-  padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd)}
-td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--tx2)}
-[data-theme="light"] td{border-bottom-color:rgba(0,0,0,.04)}
-tr:last-child td{border-bottom:none}
-/* ── レスポンシブ ────────────────────────────────────────────────── */
-@media(max-width:768px){
-  .sidebar{width:260px}
-  .sidebar.collapsed{transform:translateX(-100%)}
-  .main{margin-left:0!important;padding:14px 12px 32px}
-  h1{font-size:18px;margin-top:44px}
-  .metrics{grid-template-columns:repeat(3,1fr)}
-  .metric-val{font-size:20px}
-  .prio-row{flex-wrap:wrap}
-  .prio-btn{flex:1;min-width:calc(50% - 4px)}
-}
-@media(min-width:769px){
-  .sidebar{transform:translateX(0)!important}
-  .hamburger{display:none}
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+#app{display:flex;min-height:100vh}
+#sidebar{width:220px;min-width:220px;background:var(--sfc);border-right:1px solid var(--bdr);display:flex;flex-direction:column;padding:20px 0}
+#sidebar .logo{padding:0 20px 20px;font-size:16px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--bdr);margin-bottom:12px}
+#sidebar .logo span{color:var(--txt2);font-size:11px;display:block;font-weight:400;margin-top:2px}
+.nav-item{padding:10px 20px;cursor:pointer;transition:.15s;color:var(--txt2);display:flex;align-items:center;gap:10px;font-size:13px}
+.nav-item:hover{background:var(--sfc2);color:var(--txt)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+#sidebar .bottom{margin-top:auto;padding:16px 20px;border-top:1px solid var(--bdr)}
+.user-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}
+.user-role{font-size:11px;color:var(--accent)}
+.btn-logout{margin-top:10px;width:100%;padding:8px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt2);cursor:pointer;font-size:12px;transition:.15s}
+.btn-logout:hover{background:var(--red);color:#fff;border-color:var(--red)}
+#main{flex:1;overflow-y:auto;padding:32px}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:22px;font-weight:700;margin-bottom:24px}
+.card{background:var(--sfc);border:1px solid var(--bdr);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-sm{background:var(--sfc);border:1px solid var(--bdr);border-radius:var(--radius);padding:16px;margin-bottom:12px;cursor:pointer;transition:.15s}
+.card-sm:hover{border-color:var(--accent);background:var(--sfc2)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.card-meta{font-size:12px;color:var(--txt2);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-pending{background:rgba(92,124,250,.15);color:var(--accent)}
+.badge-approved{background:rgba(81,207,102,.15);color:var(--green)}
+.badge-rejected{background:rgba(255,107,107,.15);color:var(--red)}
+.badge-withdrawn{background:rgba(148,153,181,.15);color:var(--txt2)}
+.badge-judge{background:rgba(255,146,43,.15);color:var(--orange)}
+.badge-confirm{background:rgba(81,207,102,.15);color:var(--green)}
+.badge-notify{background:rgba(92,124,250,.15);color:var(--accent)}
+.badge-consensus{background:rgba(255,212,59,.15);color:var(--yellow)}
+.badge-risk-low{background:rgba(81,207,102,.15);color:var(--green)}
+.badge-risk-medium{background:rgba(255,146,43,.15);color:var(--orange)}
+.badge-risk-high{background:rgba(255,107,107,.15);color:var(--red)}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;font-weight:500}
+input,select,textarea{width:100%;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;color:var(--txt);font-size:14px;font-family:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:120px}
+select option{background:var(--sfc2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--sfc2);color:var(--txt);border:1px solid var(--bdr)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(255,107,107,.15);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:rgba(81,207,102,.15);color:var(--green);border:1px solid rgba(81,207,102,.3)}
+.btn-success:hover{background:var(--green);color:#000}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-card{background:var(--sfc);border:1px solid var(--bdr);border-radius:14px;padding:40px;width:100%;max-width:380px}
+.login-title{font-size:22px;font-weight:700;margin-bottom:6px}
+.login-sub{color:var(--txt2);font-size:13px;margin-bottom:28px}
+.steps{display:flex;align-items:center;gap:8px;margin-bottom:28px}
+.step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2)}
+.step.active{color:var(--txt)}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--sfc2);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.step.active .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#000}
+.step-sep{width:32px;height:1px;background:var(--bdr)}
+.diff-block{background:#0a0d15;border:1px solid var(--bdr);border-radius:6px;padding:12px;font-family:monospace;font-size:12px;overflow-x:auto;margin-top:8px}
+.da{color:var(--green)}.dd{color:var(--red)}.dc{color:var(--txt2)}
+.accordion-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--accent)}
+.accordion-body{display:none;margin-top:10px}
+.accordion-body.open{display:block}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th,.data-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--bdr);font-size:13px}
+.data-table th{color:var(--txt2);font-weight:500;font-size:12px}
+.data-table tr:last-child td{border-bottom:none}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;display:none}
+.modal-overlay.open{display:flex}
+.modal{background:var(--sfc);border:1px solid var(--bdr);border-radius:14px;padding:28px;max-width:640px;width:calc(100% - 32px);max-height:85vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:20px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr)}
+.md-body h2{font-size:14px;margin:14px 0 6px;color:var(--accent)}
+.md-body p{margin-bottom:8px;color:var(--txt2)}
+.md-body ul{padding-left:18px;color:var(--txt2)}
+.md-body li{margin-bottom:3px}
+.check-row{display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;font-size:13px}
+.check-row input[type=checkbox]{width:auto}
+.empty{text-align:center;padding:48px 0;color:var(--txt2)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:8px;padding:12px 18px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:.3s;max-width:320px}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-color:var(--green);color:var(--green)}
+#toast.error{border-color:var(--red);color:var(--red)}
+@media(max-width:680px){#sidebar{display:none}#main{padding:16px}}
 </style>
 </head>
 <body>
-<!-- ハンバーガーメニュー -->
-<button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
-
-<!-- ログイン画面 -->
-<div id="login-page" class="login-wrap">
-  <div class="login-box">
-    <div class="card" style="padding:24px 22px">
-      <div style="font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">CodeBridge</div>
-      <div style="font-size:13px;color:var(--tx3);margin-bottom:22px">Sign in to continue</div>
-      <div class="field"><label>Email</label><input type="email" id="li-email" placeholder="you@example.com" autocomplete="email"></div>
-      <div class="field"><label>Password</label><input type="password" id="li-pw" placeholder="••••••••" autocomplete="current-password"></div>
-      <div id="li-err" class="alert alert-err hide" style="margin-bottom:10px"></div>
-      <button class="btn btn-primary btn-full" id="li-btn" onclick="doLogin()">Sign in</button>
-    </div>
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-title">CodeBridge Ringi</div>
+    <div class="login-sub">稟議AIエージェント</div>
+    <div class="form-group"><label>メールアドレス</label><input id="login-email" type="email" placeholder="admin@codebridge.ai"></div>
+    <div class="form-group"><label>パスワード</label><input id="login-password" type="password" placeholder="••••••••"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">ログイン</button>
+    <div id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none"></div>
   </div>
 </div>
-
-<!-- アプリ本体（ログイン後に表示） -->
-<div id="app" class="app hide">
-  <!-- サイドバー -->
-  <nav class="sidebar" id="sidebar">
-    <div class="user-info">
-      <div class="user-name" id="sb-name"></div>
-      <div class="user-sub" id="sb-sub"></div>
+<div id="app" style="display:none">
+  <nav id="sidebar">
+    <div class="logo">Ringi AI<span>CodeBridge Ringi</span></div>
+    <div id="nav-inbox" class="nav-item" onclick="showPage('inbox')" style="display:none"><span class="icon">📥</span>受信トレイ</div>
+    <div id="nav-apply" class="nav-item" onclick="showPage('apply')"><span class="icon">✍️</span>申請する</div>
+    <div id="nav-history" class="nav-item" onclick="showPage('history')"><span class="icon">📋</span>申請履歴</div>
+    <div id="nav-phase3" class="nav-item" onclick="showPage('phase3')" style="display:none"><span class="icon">📊</span>Phase 3</div>
+    <div id="nav-settings" class="nav-item" onclick="showPage('settings')" style="display:none"><span class="icon">⚙️</span>承認者設定</div>
+    <div class="bottom">
+      <div class="user-name" id="sidebar-name"></div>
+      <div class="user-role" id="sidebar-role"></div>
+      <button class="btn-logout" onclick="doLogout()">ログアウト</button>
     </div>
-    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
-    <button class="nav-btn" data-page="request" onclick="goto('request')">Request</button>
-    <button class="nav-btn" data-page="engineer" id="nav-engineer" onclick="goto('engineer')" style="display:none">Engineer</button>
-    <button class="nav-btn" data-page="admin" id="nav-admin" onclick="goto('admin')" style="display:none">Admin</button>
-    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
-    <div class="sec" style="margin-top:4px" id="sb-sys-sec">System</div>
-    <div class="sys-row">
-      <div class="dot dot-grn"></div>
-      <span style="font-size:12.5px;color:var(--txt)" id="sb-sysname">Shift Management</span>
-    </div>
-    <div style="flex:1"></div>
-    <hr style="border:none;border-top:1px solid var(--brd);margin:8px 0">
-    <button class="nav-btn" onclick="doLogout()" style="color:var(--tx3)">Sign out</button>
   </nav>
-
-  <!-- メインコンテンツ -->
-  <main class="main full" id="main-content">
-    <!-- 右上の設定ボタン -->
-    <div style="position:absolute;top:16px;right:20px;display:flex;gap:6px;z-index:50">
-      <button class="btn btn-secondary btn-sm" onclick="goto('settings')" title="Settings">⚙</button>
+  <main id="main">
+    <div id="page-inbox" class="page">
+      <div class="page-title">📥 受信トレイ</div>
+      <div id="inbox-list"></div>
     </div>
-
-    <!-- リクエストページ -->
-    <div id="page-request" class="page-content hide">
-      <h1 id="req-title">Request Changes</h1>
-      <div class="prio-row" id="prio-row">
-        <button class="prio-btn" data-p="low" onclick="setPrio('low')">Low</button>
-        <button class="prio-btn sel-mid" data-p="mid" onclick="setPrio('mid')">Med</button>
-        <button class="prio-btn" data-p="high" onclick="setPrio('high')">High</button>
-        <button class="prio-btn" data-p="urgent" onclick="setPrio('urgent')">Urgent</button>
+    <div id="page-apply" class="page">
+      <div class="page-title">✍️ 申請する</div>
+      <div class="steps">
+        <div class="step active" id="step-ind-1"><div class="step-num">1</div>内容入力</div>
+        <div class="step-sep"></div>
+        <div class="step" id="step-ind-2"><div class="step-num">2</div>AI確認・編集</div>
       </div>
-      <div class="field">
-        <label id="req-instr-lbl">Instructions</label>
-        <textarea id="req-instruction" rows="6" placeholder="e.g.&#10;· Change the header background color&#10;· Make KPI numbers larger&#10;· Add row hover highlight"></textarea>
-      </div>
-      <div class="field">
-        <label id="req-cmt-lbl">Comment to Engineer (optional)</label>
-        <textarea id="req-comment" rows="3" placeholder="Add any supplementary notes here"></textarea>
-      </div>
-      <div id="req-progress" class="hide">
-        <div class="progress-bar"><div class="progress-fill" id="req-bar" style="width:0%"></div></div>
-        <div class="loader"><div class="spinner"></div><span id="req-step">Processing...</span></div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="doRequest()" id="req-btn">Send to AI</button>
-      <div id="req-result" class="hide" style="margin-top:12px"></div>
-    </div>
-
-    <!-- エンジニアページ -->
-    <div id="page-engineer" class="page-content hide">
-      <h1>Engineer Review</h1>
-      <div id="eng-empty" class="card" style="text-align:center;padding:32px">
-        <span style="color:var(--tx2)">Send a request to see review content here</span>
-      </div>
-      <div id="eng-content" class="hide">
-        <div class="metrics" id="eng-metrics"></div>
-        <div id="eng-badge"></div>
-        <div class="sec">User Instructions</div>
-        <div class="card bl" id="eng-instruction"></div>
-        <div id="eng-comment-box" class="hide">
-          <div class="card-sm am" id="eng-comment-content"></div>
-        </div>
-        <div class="sec">AI Report</div>
-        <div class="card am" id="eng-report"></div>
-        <div class="sec">Code Changes</div>
-        <div class="tabs-bar">
-          <button class="tab-btn active" onclick="showTab('diff')">Diff</button>
-          <button class="tab-btn" onclick="showTab('before')">Before</button>
-          <button class="tab-btn" onclick="showTab('after')">After</button>
-        </div>
-        <div id="tab-diff" class="tab-panel active"><div class="diff-wrap" id="eng-diff"></div></div>
-        <div id="tab-before" class="tab-panel"><pre id="eng-before"></pre></div>
-        <div id="tab-after" class="tab-panel"><pre id="eng-after"></pre></div>
-        <div class="sec" style="margin-top:14px">Decision</div>
-        <div class="row">
-          <div class="card" style="padding:14px 16px">
-            <div style="font-size:13.5px;font-weight:600;margin-bottom:3px">Approve & Deploy</div>
-            <div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">Backup taken before deploy</div>
-            <button class="btn btn-primary btn-full" onclick="doApprove()">Approve</button>
-            <div id="approve-result" class="hide" style="margin-top:8px"></div>
+      <div id="step1">
+        <div class="card">
+          <div class="form-group">
+            <label>申請内容を自由に書いてください</label>
+            <textarea id="raw-input" rows="6" placeholder="例：&#10;・残業45時間超のスタッフを赤字で表示してほしい&#10;・新しいSlackワークスペースを導入したい&#10;・来月の東京出張を申請したい"></textarea>
           </div>
-          <div class="card" style="padding:14px 16px">
-            <div style="font-size:13.5px;font-weight:600;margin-bottom:3px">Reject & Regenerate</div>
-            <div style="font-size:11.5px;color:var(--tx3);margin-bottom:10px">Send correction to AI</div>
-            <textarea id="eng-feedback" rows="3" style="width:100%;padding:8px;background:var(--inb);border:1.5px solid var(--inr);border-radius:9px;color:var(--txt);font-family:inherit;font-size:13px;outline:none;margin-bottom:8px" placeholder="e.g.: Make the button green"></textarea>
-            <button class="btn btn-secondary btn-full" onclick="doReject()" id="regen-btn">Regenerate</button>
-            <div id="regen-progress" class="hide" style="margin-top:8px">
-              <div class="loader"><div class="spinner"></div><span>Regenerating...</span></div>
+          <button class="btn btn-primary" onclick="doAnalyze()" id="btn-analyze"><span>AIに分析してもらう ▶</span></button>
+        </div>
+      </div>
+      <div id="step2" style="display:none">
+        <div class="card" style="margin-bottom:12px;border-color:var(--accent);background:rgba(92,124,250,.05)">
+          <div style="font-size:12px;color:var(--accent);font-weight:600">AIが稟議書を作成しました</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px">基本情報</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-group" style="margin:0"><label>承認タイプ</label>
+              <select id="sel-approval-type"><option value="confirm">確認型</option><option value="notify">通知型</option><option value="judge">判断型</option><option value="consensus">合議型</option></select>
+            </div>
+            <div class="form-group" style="margin:0"><label>承認者</label><select id="sel-approver"></select></div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--txt2)"><span style="font-weight:500">推薦理由：</span><span id="approver-reason"></span></div>
+          <div style="margin-top:6px;font-size:12px;color:var(--txt2)">リスク：<span id="risk-badge"></span></div>
+          <div id="key-points-area" style="margin-top:10px;display:none">
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:4px;font-weight:500">確認ポイント：</div>
+            <ul id="key-points-list" style="padding-left:16px;font-size:12px;color:var(--txt2)"></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px">稟議書</div>
+          <div class="form-group"><label>タイトル</label><input id="draft-title" type="text"></div>
+          <div class="form-group" style="margin:0"><label>本文</label><textarea id="draft-body" rows="10"></textarea></div>
+        </div>
+        <div class="card" id="code-deploy-card" style="display:none">
+          <div class="card-title" style="margin-bottom:12px">🔧 コード変更</div>
+          <label class="check-row"><input type="checkbox" id="chk-auto-deploy" checked>承認後に自動で本番反映する</label>
+          <div style="margin-top:12px">
+            <div class="accordion-toggle" onclick="toggleDiff()"><span id="diff-arrow">▶</span> 差分を確認する</div>
+            <div class="accordion-body" id="diff-body">
+              <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">変更行数: <span id="diff-changed-lines"></span>行</div>
+              <div class="diff-block" id="diff-block"></div>
+              <div style="margin-top:10px;font-size:12px;color:var(--txt2)"><strong>AIレポート：</strong><span id="diff-report"></span></div>
             </div>
           </div>
         </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-secondary" onclick="backToStep1()">← 戻る</button>
+          <button class="btn btn-primary" onclick="doSubmit()">この内容で送信 ▶</button>
+        </div>
+      </div>
+      <div id="step-done" style="display:none">
+        <div class="card" style="text-align:center;padding:40px">
+          <div style="font-size:36px;margin-bottom:16px">✅</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">稟議書を送信しました</div>
+          <div id="done-msg" style="color:var(--txt2);font-size:13px;margin-bottom:24px"></div>
+          <button class="btn btn-secondary" onclick="showPage('history')">申請履歴を見る</button>
+        </div>
       </div>
     </div>
-
-    <!-- 管理ページ -->
-    <div id="page-admin" class="page-content hide">
-      <h1>Admin</h1>
-      <div class="tabs-bar">
-        <button class="tab-btn active" onclick="showAdminTab('users')">Users</button>
-        <button class="tab-btn" onclick="showAdminTab('logs')">Activity Log</button>
-        <button class="tab-btn" onclick="showAdminTab('cost')">Cost</button>
-      </div>
-      <div id="admin-tab-users" class="tab-panel active">
-        <div class="sec">User List</div>
-        <div id="admin-users-list"></div>
-        <div class="sec" style="margin-top:20px">Add User</div>
-        <div class="card" style="padding:16px 18px">
-          <div class="row"><div class="field"><label>Name</label><input type="text" id="nu-name"></div><div class="field"><label>Email</label><input type="email" id="nu-email"></div></div>
-          <div class="row"><div class="field"><label>Password</label><input type="password" id="nu-pw"></div><div class="field"><label>Role</label><select id="nu-role"><option value="requester">Requester</option><option value="engineer">Engineer</option><option value="admin">Admin</option></select></div></div>
-          <button class="btn btn-primary" onclick="doAddUser()">Add User</button>
-          <div id="nu-result" style="margin-top:8px"></div>
-        </div>
-      </div>
-      <div id="admin-tab-logs" class="tab-panel" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div class="sec" style="margin:0;border:none">Activity Log</div>
-          <button class="btn btn-secondary btn-sm" onclick="downloadCsv()">Download CSV</button>
-        </div>
-        <div id="admin-logs-list"></div>
-      </div>
-      <div id="admin-tab-cost" class="tab-panel" style="display:none">
-        <div class="sec">This Month</div>
-        <div class="metrics" id="admin-cost-monthly"></div>
-        <div class="sec" style="margin-top:16px">Recent Requests</div>
-        <div id="admin-cost-history"></div>
-      </div>
+    <div id="page-history" class="page">
+      <div class="page-title">📋 申請履歴</div>
+      <div id="history-list"></div>
     </div>
-
-    <!-- 設定ページ -->
-    <div id="page-settings" class="page-content hide">
-      <h1>Settings</h1>
-      <div class="sec">Appearance</div>
-      <div class="row" style="margin-bottom:14px">
-        <button class="btn btn-secondary" id="btn-light" onclick="setTheme('light')">Light</button>
-        <button class="btn btn-primary" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+    <div id="page-phase3" class="page">
+      <div class="page-title">📊 Phase 3 ダッシュボード</div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">承認者別統計</div>
+        <table class="data-table"><thead><tr><th>承認者</th><th>平均承認時間</th><th>承認率</th><th>承認件数</th></tr></thead><tbody id="phase3-approver-tbody"></tbody></table>
       </div>
-      <div class="sec">Language</div>
-      <div class="row" style="margin-bottom:14px">
-        <button class="btn btn-secondary" id="btn-ja" onclick="setLang('ja')">日本語</button>
-        <button class="btn btn-primary" id="btn-en" onclick="setLang('en')">English</button>
-      </div>
-      <div class="sec">Change Password</div>
-      <div class="card" style="padding:16px 18px">
-        <div class="field"><label>Current Password</label><input type="password" id="cp-old" placeholder="••••••••"></div>
-        <div class="field"><label>New Password</label><input type="password" id="cp-new" placeholder="••••••••"></div>
-        <div class="field"><label>Confirm New Password</label><input type="password" id="cp-new2" placeholder="••••••••"></div>
-        <button class="btn btn-primary" onclick="doChangePw()">Change Password</button>
-        <div id="cp-result" style="margin-top:8px"></div>
-      </div>
-      <div class="sec" id="set-sysinfo-sec">System Info</div>
-      <div class="card" id="set-sysinfo" style="padding:0 16px">
-        <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--brd);gap:12px">
-          <span style="font-size:9.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;min-width:70px">Demo URL</span>
-          <a href="https://nobushi-shift.webdav-lolipop.jp/demo_codebrige.html" target="_blank" style="font-size:13px;color:var(--txt);text-decoration:underline">nobushi-shift.webdav-lolipop.jp/demo_codebrige.html</a>
-        </div>
-        <div style="display:flex;align-items:center;padding:9px 0;gap:12px">
-          <span style="font-size:9.5px;font-weight:700;color:var(--tx3);text-transform:uppercase;min-width:70px">Source</span>
-          <code style="font-size:11.5px;color:var(--tx2);background:var(--bg2);padding:2px 6px;border-radius:4px">target_app/demo_local.html</code>
-        </div>
-      </div>
-      <div id="set-cost-sec" class="hide">
-        <div class="sec">Cost This Month</div>
-        <div id="set-cost-val" class="card" style="padding:14px 18px"></div>
-      </div>
+      <div class="card"><div class="card-title" style="margin-bottom:14px">申請タイプ別 平均承認時間</div><div id="phase3-type-stats"></div></div>
+      <div class="card"><div class="card-title" style="margin-bottom:8px">🤖 自動化候補</div><div id="phase3-automation-msg" style="font-size:13px;color:var(--txt2)"></div></div>
+    </div>
+    <div id="page-settings" class="page">
+      <div class="page-title">⚙️ 承認者設定</div>
+      <div id="settings-list"></div>
     </div>
   </main>
 </div>
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">申請者: <span id="modal-requester"></span> &nbsp;|&nbsp; <span id="modal-type-badge"></span> &nbsp;|&nbsp; <span id="modal-ts"></span></div>
+    <div class="md-body" id="modal-body-md"></div>
+    <div id="modal-code-section" style="display:none;margin-top:16px">
+      <div class="card" style="padding:14px;background:var(--sfc2)">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">🔧 コード変更</div>
+        <div id="modal-auto-deploy-note" style="font-size:12px;color:var(--txt2);margin-bottom:8px"></div>
+        <div class="accordion-toggle" onclick="toggleModalDiff()"><span id="modal-diff-arrow">▶</span> 差分を確認する</div>
+        <div class="accordion-body" id="modal-diff-body">
+          <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">変更行数: <span id="modal-diff-lines"></span>行</div>
+          <div class="diff-block" id="modal-diff-block"></div>
+        </div>
+      </div>
+    </div>
+    <div id="modal-approve-area" style="display:none;margin-top:16px">
+      <div class="form-group"><label>承認者コメント（任意）</label><textarea id="modal-comment" rows="3" placeholder="コメントがあれば記入してください"></textarea></div>
+    </div>
+    <div id="modal-reject-area" style="display:none;margin-top:8px">
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">差し戻しコメント（必須）</div>
+      <textarea id="modal-reject-comment" rows="3" placeholder="差し戻し理由を入力してください"></textarea>
+    </div>
+    <div id="modal-resolved-area" style="display:none;margin-top:12px;padding:12px;background:var(--sfc2);border-radius:6px;font-size:13px">
+      <span id="modal-resolved-badge"></span>
+      <div id="modal-resolved-comment" style="color:var(--txt2);margin-top:6px;font-size:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
+      <button class="btn btn-danger" id="btn-reject" onclick="doReject()" style="display:none">差し戻す</button>
+      <button class="btn btn-success" id="btn-approve" onclick="doApprove()" style="display:none">承認する ✓</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
 <script>
-// ── 設定 ─────────────────────────────────────────────────────────────────────
-const API = window.location.hostname === 'localhost'
-  ? 'http://localhost:8000'
-  : 'https://codebridge-t-k-haru.azurewebsites.net';
-
-// ── 状態 ─────────────────────────────────────────────────────────────────────
-let S = {
-  token: localStorage.getItem('cb_token') || '',
-  user:  JSON.parse(localStorage.getItem('cb_user') || 'null'),
-  theme: localStorage.getItem('cb_theme') || 'dark',
-  lang:  localStorage.getItem('cb_lang')  || 'en',
-  page:  'request',
-  prio:  'mid',
-  result: null,
-};
-
-// ── i18n ──────────────────────────────────────────────────────────────────────
-const I18N = {
-  en: {
-    request:'Request', engineer:'Engineer', admin:'Admin', settings:'Settings',
-    system:'System', signout:'Sign out',
-    req_title:'Request Changes',
-    instr:'Instructions', instr_ph:'e.g.\n· Change the header background color\n· Make KPI numbers larger',
-    cmt:'Comment to Engineer (optional)', cmt_ph:'Add any supplementary notes here',
-    send:'Send to AI', low:'Low', mid:'Med', high:'High', urgent:'Urgent',
-    analyzing:'Analyzing...', generating:'Generating code...', validating:'Validating...',
-    verifying:'Verifying...', reporting:'Creating report...',
-    code_ok:'Code generated', code_ok_sub:'An engineer is reviewing. Changes will be applied after approval.',
-    code_warn:'Engineer review required',
-    sandbox:'Sandbox', passed:'Test Passed', failed:'Test Failed',
-    debug:'Debug', lines:'Lines',
-    user_instr:'User Instructions', ai_report:'AI Report', code_diff:'Code Changes',
-    diff:'Diff', before:'Before', after:'After',
-    decision:'Decision', approve:'Approve & Deploy', approve_btn:'Approve', approved:'Deployed!',
-    reject:'Reject & Regenerate', regen:'Regenerate',
-    appearance:'Appearance', language:'Language', change_pw:'Change Password',
-    sys_info:'System Info', cost_month:'Cost This Month',
-    light:'Light', dark:'Dark',
-    cur_pw:'Current Password', new_pw:'New Password', confirm_pw:'Confirm New Password',
-    change:'Change Password', pw_changed:'Password changed',
-    priority:'Priority',
-  },
-  ja: {
-    request:'リクエスト', engineer:'エンジニア', admin:'管理', settings:'設定',
-    system:'対象システム', signout:'ログアウト',
-    req_title:'変更をリクエスト',
-    instr:'指示内容', instr_ph:'例：\n・シフト表のヘッダー色を変えたい\n・KPIの数字を大きくしたい',
-    cmt:'エンジニアへのコメント（任意）', cmt_ph:'補足情報があれば記入してください',
-    send:'AIに送信', low:'低', mid:'中', high:'高', urgent:'緊急',
-    analyzing:'解析中...', generating:'コード生成中...', validating:'検証中...',
-    verifying:'確認中...', reporting:'レポート作成中...',
-    code_ok:'コードを生成しました', code_ok_sub:'エンジニアが確認中です。承認後に本番環境へ反映されます。',
-    code_warn:'エンジニアの確認が必要です',
-    sandbox:'サンドボックス', passed:'テスト成功', failed:'テスト失敗',
-    debug:'デバッグ試行', lines:'変更行数',
-    user_instr:'ユーザーからの指示', ai_report:'AIレポート', code_diff:'コード変更内容',
-    diff:'差分', before:'変更前', after:'変更後',
-    decision:'判断', approve:'承認してデプロイ', approve_btn:'承認', approved:'デプロイ完了！',
-    reject:'差し戻して再生成', regen:'再生成',
-    appearance:'外観', language:'言語', change_pw:'パスワード変更',
-    sys_info:'システム情報', cost_month:'今月のコスト',
-    light:'ライト', dark:'ダーク',
-    cur_pw:'現在のパスワード', new_pw:'新しいパスワード', confirm_pw:'新しいパスワード（確認）',
-    change:'変更', pw_changed:'パスワードを変更しました',
-    priority:'重要度',
-  }
-};
-function t(k){ return (I18N[S.lang]||I18N.en)[k] || k }
-
-// ── テーマ ────────────────────────────────────────────────────────────────────
-function applyTheme(th){
-  S.theme=th; localStorage.setItem('cb_theme',th);
-  document.documentElement.setAttribute('data-theme', th==='light'?'light':'');
-  document.getElementById('btn-light').className='btn '+(th==='light'?'btn-primary':'btn-secondary');
-  document.getElementById('btn-dark').className='btn '+(th==='dark'?'btn-primary':'btn-secondary');
-}
-function setTheme(th){ applyTheme(th) }
-
-// ── 言語 ──────────────────────────────────────────────────────────────────────
-function applyLang(lg){
-  S.lang=lg; localStorage.setItem('cb_lang',lg);
-  document.getElementById('btn-ja').className='btn '+(lg==='ja'?'btn-primary':'btn-secondary');
-  document.getElementById('btn-en').className='btn '+(lg==='en'?'btn-primary':'btn-secondary');
-  updateText();
-}
-function setLang(lg){ applyLang(lg) }
-
-function updateText(){
-  const lg = S.lang;
-  document.querySelectorAll('[data-page="request"]').forEach(el=>el.textContent=t('request'));
-  document.querySelectorAll('[data-page="engineer"]').forEach(el=>el.textContent=t('engineer'));
-  document.querySelectorAll('[data-page="admin"]').forEach(el=>el.textContent=t('admin'));
-  document.getElementById('sb-sys-sec') && (document.getElementById('sb-sys-sec').textContent=t('system'));
-  document.getElementById('req-title') && (document.getElementById('req-title').textContent=t('req_title'));
-  document.getElementById('req-instr-lbl') && (document.getElementById('req-instr-lbl').textContent=t('instr'));
-  document.getElementById('req-instruction') && (document.getElementById('req-instruction').placeholder=t('instr_ph'));
-  document.getElementById('req-cmt-lbl') && (document.getElementById('req-cmt-lbl').textContent=t('cmt'));
-  document.getElementById('req-comment') && (document.getElementById('req-comment').placeholder=t('cmt_ph'));
-  document.getElementById('req-btn') && (document.getElementById('req-btn').textContent=t('send'));
-  const pb = ['low','mid','high','urgent'];
-  pb.forEach(p=>{ const el=document.querySelector(`.prio-btn[data-p="${p}"]`); if(el) el.textContent=t(p); });
-}
-
-// ── API ───────────────────────────────────────────────────────────────────────
-async function api(path, opts={}, timeout=180000){
-  const ctrl = new AbortController();
-  const tid = setTimeout(()=>ctrl.abort(), timeout);
-  const headers = {'Content-Type':'application/json'};
-  if(S.token) headers['Authorization'] = 'Bearer '+S.token;
-  try{
-    const r = await fetch(API+path, {...opts, headers:{...headers,...(opts.headers||{})}, signal:ctrl.signal});
-    clearTimeout(tid);
-    if(r.status===401){ doLogout(); return null }
-    if(!r.ok) throw new Error(await r.text());
-    return await r.json();
-  } catch(e){ clearTimeout(tid); throw e }
-}
-
-// ── ログイン ──────────────────────────────────────────────────────────────────
-async function doLogin(){
-  const email = document.getElementById('li-email').value;
-  const pw    = document.getElementById('li-pw').value;
-  const err   = document.getElementById('li-err');
-  const btn   = document.getElementById('li-btn');
-  if(!email||!pw){ err.textContent='Please enter email and password'; err.classList.remove('hide'); return }
-  btn.textContent='Signing in...'; btn.disabled=true;
-  try{
-    const data = await api('/api/login',{method:'POST',body:JSON.stringify({email,password:pw})});
-    if(!data) return;
-    S.token=data.token; S.user=data.user;
-    localStorage.setItem('cb_token',S.token);
-    localStorage.setItem('cb_user',JSON.stringify(S.user));
-    initApp();
-  } catch(e){
-    err.textContent='Invalid email or password'; err.classList.remove('hide');
-  } finally{ btn.textContent='Sign in'; btn.disabled=false }
-}
-document.getElementById('li-pw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin() });
-
-async function doLogout(){
-  await api('/api/logout',{method:'POST'}).catch(()=>{});
-  S.token=''; S.user=null; S.result=null;
-  localStorage.removeItem('cb_token'); localStorage.removeItem('cb_user');
-  document.getElementById('app').classList.add('hide');
-  document.getElementById('login-page').classList.remove('hide');
-}
-
-// ── アプリ初期化 ─────────────────────────────────────────────────────────────
-function initApp(){
-  document.getElementById('login-page').classList.add('hide');
-  document.getElementById('app').classList.remove('hide');
-  const u = S.user;
-  document.getElementById('sb-name').textContent = u.name;
-  document.getElementById('sb-sub').textContent  = u.email+' · '+u.role;
-  document.getElementById('sb-sysname').textContent = S.lang==='ja'?'シフト管理':'Shift Management';
-  // ロール別ナビ
-  if(u.role==='engineer'||u.role==='admin') document.getElementById('nav-engineer').style.display='block';
-  if(u.role==='admin') document.getElementById('nav-admin').style.display='block';
-  // 設定：エンジニア/管理者のみシステム情報表示
-  if(u.role==='engineer'||u.role==='admin') document.getElementById('set-sysinfo-sec').style.display='block';
-  else { document.getElementById('set-sysinfo-sec').style.display='none'; document.getElementById('set-sysinfo').style.display='none'; }
-  if(u.role==='admin') document.getElementById('set-cost-sec').classList.remove('hide');
-  applyTheme(S.theme);
-  applyLang(S.lang);
-  // モバイルではサイドバーを初期閉じ
-  if(window.innerWidth<=768){ closeSidebar() } else { openSidebar() }
-  goto('request');
-}
-
-// ── ナビゲーション ───────────────────────────────────────────────────────────
-function goto(page){
-  S.page=page;
-  document.querySelectorAll('.page-content').forEach(el=>el.classList.add('hide'));
-  const target=document.getElementById('page-'+page);
-  if(target) target.classList.remove('hide');
-  document.querySelectorAll('.nav-btn').forEach(el=>{
-    el.classList.toggle('active', el.dataset.page===page);
-  });
-  if(page==='admin') loadAdmin();
-  if(page==='engineer') showEngContent();
-  if(page==='settings') loadCostSetting();
-  if(window.innerWidth<=768) closeSidebar();
-}
-
-// ── ハンバーガー ─────────────────────────────────────────────────────────────
-let sidebarOpen = false;
-function openSidebar(){ sidebarOpen=true; document.getElementById('sidebar').classList.remove('collapsed'); document.getElementById('hamburger').textContent='✕'; document.getElementById('main-content').style.marginLeft=window.innerWidth>768?'240px':'0' }
-function closeSidebar(){ sidebarOpen=false; document.getElementById('sidebar').classList.add('collapsed'); document.getElementById('hamburger').textContent='☰'; document.getElementById('main-content').style.marginLeft='0' }
-document.getElementById('hamburger').addEventListener('click',()=>{ sidebarOpen?closeSidebar():openSidebar() });
-
-// ── 重要度 ────────────────────────────────────────────────────────────────────
-function setPrio(p){
-  S.prio=p;
-  document.querySelectorAll('.prio-btn').forEach(el=>{
-    el.className='prio-btn'+(el.dataset.p===p?' sel-'+p:'');
-  });
-}
-
-// ── AI リクエスト ─────────────────────────────────────────────────────────────
-async function doRequest(){
-  const instr = document.getElementById('req-instruction').value.trim();
-  const cmt   = document.getElementById('req-comment').value.trim();
-  if(!instr){ alert(t('instr')+' is required'); return }
-  const btn=document.getElementById('req-btn');
-  const prog=document.getElementById('req-progress');
-  const res=document.getElementById('req-result');
-  btn.disabled=true; btn.textContent='...';
-  prog.classList.remove('hide'); res.classList.add('hide');
-  // ステップ表示
-  const steps=[t('analyzing'),t('generating'),t('validating'),t('verifying'),t('reporting')];
-  let si=0;
-  const stepEl=document.getElementById('req-step');
-  const barEl=document.getElementById('req-bar');
-  const iv=setInterval(()=>{
-    if(si<steps.length){ stepEl.textContent=steps[si]; barEl.style.width=((si+1)/steps.length*90)+'%'; si++ }
-  },1800);
-  try{
-    const data=await api('/api/pipeline',{method:'POST',body:JSON.stringify({instruction:instr,priority:S.prio,eng_comment:cmt})},300000);
-    clearInterval(iv); barEl.style.width='100%';
-    if(!data) return;
-    S.result=data;
-    res.innerHTML=data.success
-      ?`<div class="card gn"><strong style="color:var(--grn)">${t('code_ok')}</strong><br><span style="font-size:12.5px;color:var(--tx2)">${t('code_ok_sub')}</span></div>`
-      :`<div class="card am"><strong style="color:var(--amb)">${t('code_warn')}</strong></div>`;
-    res.classList.remove('hide');
-  } catch(e){
-    clearInterval(iv);
-    res.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;
-    res.classList.remove('hide');
-  } finally{
-    btn.disabled=false; btn.textContent=t('send');
-    prog.classList.add('hide');
-  }
-}
-
-// ── エンジニアレビュー ─────────────────────────────────────────────────────────
-function showEngContent(){
-  if(!S.result){ document.getElementById('eng-empty').classList.remove('hide'); document.getElementById('eng-content').classList.add('hide'); return }
-  document.getElementById('eng-empty').classList.add('hide');
-  document.getElementById('eng-content').classList.remove('hide');
-  const r=S.result;
-  // メトリクス
-  const dot=r.success?'<span class="dot dot-grn"></span>':'<span class="dot dot-red"></span>';
-  const lbl=r.success?t('passed'):t('failed');
-  document.getElementById('eng-metrics').innerHTML=`
-    <div class="metric"><div class="metric-label">${t('sandbox')}</div><div style="margin-top:8px">${dot}<span style="font-size:13px;font-weight:600">${lbl}</span></div></div>
-    <div class="metric"><div class="metric-label">${t('debug')}</div><div class="metric-val">${r.iterations}</div></div>
-    <div class="metric"><div class="metric-label">${t('lines')}</div><div class="metric-val">${r.changed_lines}</div></div>`;
-  const pColors={low:'var(--grn)',mid:'var(--txt)',high:'var(--amb)',urgent:'var(--red)'};
-  const pc=pColors[S.prio]||'var(--txt)';
-  document.getElementById('eng-badge').innerHTML=`<span class="badge" style="background:${pc}22;color:${pc};border:1px solid ${pc}44">${t('priority')}: ${t(S.prio)}</span>`;
-  document.getElementById('eng-instruction').innerHTML=`<span style="font-size:13.5px;line-height:1.65">${esc(r.original_code?'':'')}${esc(document.getElementById('req-instruction').value)}</span>`;
-  document.getElementById('eng-report').innerHTML=r.report;
-  document.getElementById('eng-diff').innerHTML=buildDiff(r.original_code,r.new_code);
-  document.getElementById('eng-before').textContent=r.original_code;
-  document.getElementById('eng-after').textContent=r.new_code;
-}
-
-function buildDiff(a,b){
-  if(!a||!b) return '<span class="dc">No data</span>';
-  const al=a.split('\n'), bl=b.split('\n'), out=[];
-  // 簡易unified diff表示（実際のdiffはサーバー側でやってもいいが、ここではラインベース）
-  let i=0,j=0;
-  while(i<al.length||j<bl.length){
-    if(i<al.length&&j<bl.length&&al[i]===bl[j]){ out.push('<span class="dc">'+esc(al[i])+'</span>'); i++;j++; }
-    else if(i<al.length&&(j>=bl.length||al[i]!==bl[j])){ out.push('<span class="dd">-'+esc(al[i])+'</span>'); i++; }
-    else{ out.push('<span class="da">+'+esc(bl[j])+'</span>'); j++; }
-  }
-  return out.slice(0,200).join('\n');
-}
-
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
-
-async function doApprove(){
-  if(!S.result) return;
-  const btn=document.querySelector('[onclick="doApprove()"]');
-  btn.disabled=true; btn.textContent='...';
-  try{
-    await api('/api/approve',{method:'POST',body:JSON.stringify({new_code:S.result.new_code, instruction:document.getElementById('req-instruction').value})});
-    document.getElementById('approve-result').innerHTML='<div class="alert alert-ok">'+t('approved')+'</div>';
-    document.getElementById('approve-result').classList.remove('hide');
-  } catch(e){ document.getElementById('approve-result').innerHTML='<div class="alert alert-err">'+e.message+'</div>'; document.getElementById('approve-result').classList.remove('hide'); }
-  finally{ btn.disabled=false; btn.textContent=t('approve_btn') }
-}
-
-async function doReject(){
-  const fb=document.getElementById('eng-feedback').value.trim();
-  if(!fb||!S.result) return;
-  const btn=document.getElementById('regen-btn');
-  const prog=document.getElementById('regen-progress');
-  btn.classList.add('hide'); prog.classList.remove('hide');
-  try{
-    const data=await api('/api/reject',{method:'POST',body:JSON.stringify({instruction:document.getElementById('req-instruction').value, original_code:S.result.original_code, feedback:fb})},300000);
-    if(!data) return;
-    S.result=data; showEngContent();
-  } catch(e){ alert(e.message) }
-  finally{ btn.classList.remove('hide'); prog.classList.add('hide') }
-}
-
-function showTab(name){
-  ['diff','before','after'].forEach(n=>{
-    document.getElementById('tab-'+n).classList.toggle('active',n===name);
-  });
-  document.querySelectorAll('.tabs-bar .tab-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active',['diff','before','after'][i]===name);
-  });
-}
-
-// ── 管理 ──────────────────────────────────────────────────────────────────────
-async function loadAdmin(){
-  const tab=document.querySelector('#admin-tab-users');
-  if(!tab) return;
-  loadUsers(); loadLogs(); loadCost();
-}
-
-async function loadUsers(){
-  try{
-    const users=await api('/api/users');
-    if(!users) return;
-    const el=document.getElementById('admin-users-list');
-    el.innerHTML=users.map(u=>`
-      <div class="card-sm" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-        <div style="flex:2;min-width:120px"><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx3)">${esc(u.email)}</div></div>
-        <select onchange="updateRole(${u.id},this.value)" style="flex:1;padding:5px 8px;background:var(--inb);border:1px solid var(--inr);border-radius:7px;color:var(--txt);font-size:12px;min-width:100px">
-          ${['requester','engineer','admin'].map(r=>`<option${r===u.role?' selected':''}>${r}</option>`).join('')}
-        </select>
-        <button class="btn btn-secondary btn-sm" onclick="resetPw(${u.id})">Reset PW</button>
-        ${u.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="toggleUser(${u.id},${!u.active})">${u.active?'Disable':'Enable'}</button>`:''}
-      </div>`).join('');
-  } catch(e){}
-}
-
-async function updateRole(uid,role){ await api(`/api/users/${uid}/role`,{method:'PUT',body:JSON.stringify({role})}); loadUsers() }
-async function resetPw(uid){
-  const data=await api(`/api/users/${uid}/reset-password`,{method:'POST'});
-  if(data) alert('Temp password: '+data.temp_password);
-}
-async function toggleUser(uid,active){ await api(`/api/users/${uid}/active?active=${active}`,{method:'PUT'}); loadUsers() }
-async function doAddUser(){
-  const name=document.getElementById('nu-name').value; const email=document.getElementById('nu-email').value;
-  const pw=document.getElementById('nu-pw').value; const role=document.getElementById('nu-role').value;
-  const res=document.getElementById('nu-result');
-  try{
-    await api('/api/users',{method:'POST',body:JSON.stringify({name,email,password:pw,role})});
-    res.innerHTML='<div class="alert alert-ok">User added</div>'; loadUsers();
-  } catch(e){ res.innerHTML='<div class="alert alert-err">'+e.message+'</div>' }
-}
-
-async function loadLogs(){
-  try{
-    const logs=await api('/api/logs');
-    if(!logs) return;
-    const el=document.getElementById('admin-logs-list');
-    el.innerHTML='<div class="card" style="padding:0 2px;overflow-x:auto"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th><th>Cost</th></tr></thead><tbody>'+
-      logs.slice(0,100).map(r=>`<tr><td style="white-space:nowrap;font-size:11.5px">${r.ts}</td><td style="font-size:12px">${esc(r.user_name||'')}</td><td style="font-size:12px">${esc(r.action)}</td><td style="font-size:11px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc((r.detail||'').slice(0,60))}</td><td style="font-size:11px">$${(r.cost_usd||0).toFixed(5)}</td></tr>`).join('')+
-      '</tbody></table></div>';
-  } catch(e){}
-}
-
-async function downloadCsv(){
-  const r=await fetch(API+'/api/logs/csv',{headers:{Authorization:'Bearer '+S.token}});
-  const blob=await r.blob();
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='activity_log.csv'; a.click();
-}
-
-async function loadCost(){
-  try{
-    const data=await api('/api/cost');
-    if(!data) return;
-    const m=data.monthly||{};
-    document.getElementById('admin-cost-monthly').innerHTML=`
-      <div class="metric"><div class="metric-label">Total</div><div class="metric-val" style="font-size:20px">$${(m.total||0).toFixed(4)}</div><div class="metric-unit">USD</div></div>
-      <div class="metric"><div class="metric-label">Input Tokens</div><div class="metric-val" style="font-size:20px">${parseInt(m.inp||0).toLocaleString()}</div></div>
-      <div class="metric"><div class="metric-label">Output Tokens</div><div class="metric-val" style="font-size:20px">${parseInt(m.out||0).toLocaleString()}</div></div>`;
-    const el=document.getElementById('admin-cost-history');
-    el.innerHTML='<div class="card" style="padding:0 2px;overflow-x:auto"><table><thead><tr><th>Time</th><th>Request</th><th>Input</th><th>Output</th><th>Cost</th></tr></thead><tbody>'+
-      (data.history||[]).map(r=>`<tr><td style="font-size:11.5px;white-space:nowrap">${r.ts}</td><td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc((r.request_text||'').slice(0,50))}</td><td style="font-size:12px">${r.input_tokens||0}</td><td style="font-size:12px">${r.output_tokens||0}</td><td style="font-size:12px">$${(r.cost_usd||0).toFixed(5)}</td></tr>`).join('')+
-      '</tbody></table></div>';
-  } catch(e){}
-}
-
-function showAdminTab(name){
-  ['users','logs','cost'].forEach(n=>{
-    const p=document.getElementById(`admin-tab-${n}`); if(p) p.style.display=n===name?'block':'none';
-  });
-  document.querySelectorAll('#page-admin .tab-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active',['users','logs','cost'][i]===name);
-  });
-}
-
-async function loadCostSetting(){
-  if(S.user&&(S.user.role==='admin'||S.user.role==='engineer')){
-    try{
-      const data=await api('/api/cost');
-      if(!data) return;
-      const m=data.monthly||{};
-      document.getElementById('set-cost-val').innerHTML=`<span style="font-size:22px;font-weight:300">$${(m.total||0).toFixed(4)}</span> <span style="font-size:13px;color:var(--tx3)">USD this month</span>`;
-    } catch(e){}
-  }
-}
-
-// ── パスワード変更 ────────────────────────────────────────────────────────────
-async function doChangePw(){
-  const old=document.getElementById('cp-old').value;
-  const nw=document.getElementById('cp-new').value;
-  const nw2=document.getElementById('cp-new2').value;
-  const res=document.getElementById('cp-result');
-  if(nw!==nw2){ res.innerHTML='<div class="alert alert-err">Passwords do not match</div>'; return }
-  try{
-    await api('/api/change-password',{method:'POST',body:JSON.stringify({old_password:old,new_password:nw})});
-    res.innerHTML='<div class="alert alert-ok">'+t('pw_changed')+'</div>';
-    document.getElementById('cp-old').value=''; document.getElementById('cp-new').value=''; document.getElementById('cp-new2').value='';
-  } catch(e){ res.innerHTML='<div class="alert alert-err">'+e.message+'</div>' }
-}
-
-// ── 起動 ──────────────────────────────────────────────────────────────────────
-(async function init(){
-  applyTheme(S.theme); applyLang(S.lang);
-  if(S.token&&S.user){
-    try{
-      const me=await api('/api/me');
-      if(me){ S.user=me; localStorage.setItem('cb_user',JSON.stringify(me)); initApp(); return }
-    } catch(e){}
-  }
-  document.getElementById('login-page').classList.remove('hide');
-})();
+const API="";let _token=null,_user=null,_approvers=[],_currentDraft=null,_currentRequestId=null;
+async function api(method,path,body){const opts={method,headers:{"Content-Type":"application/json"}};if(_token)opts.headers["Authorization"]="Bearer "+_token;if(body)opts.body=JSON.stringify(body);const r=await fetch(API+path,opts);if(!r.ok){const e=await r.json().catch(()=>({detail:r.statusText}));throw new Error(e.detail||r.statusText)}return r.json()}
+async function doLogin(){const email=document.getElementById("login-email").value.trim(),pw=document.getElementById("login-password").value,err=document.getElementById("login-err");err.style.display="none";try{const res=await api("POST","/api/login",{email,password:pw});_token=res.token;_user=res.user;document.getElementById("login-page").style.display="none";document.getElementById("app").style.display="flex";setupNav();_approvers=await api("GET","/api/approvers");if(_user.role!=="staff")showPage("inbox");else showPage("apply")}catch(e){err.textContent=e.message;err.style.display="block"}}
+async function doLogout(){await api("POST","/api/logout").catch(()=>{});_token=null;_user=null;document.getElementById("app").style.display="none";document.getElementById("login-page").style.display="flex"}
+document.getElementById("login-password").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+function setupNav(){document.getElementById("sidebar-name").textContent=_user.name;const rl={admin:"管理者",manager:"マネージャー",staff:"一般"};document.getElementById("sidebar-role").textContent=rl[_user.role]||_user.role;if(_user.role!=="staff")document.getElementById("nav-inbox").style.display="flex";if(_user.role==="admin"){document.getElementById("nav-phase3").style.display="flex";document.getElementById("nav-settings").style.display="flex"}}
+function showPage(name){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));document.getElementById("page-"+name)?.classList.add("active");document.getElementById("nav-"+name)?.classList.add("active");({inbox:loadInbox,history:loadHistory,phase3:loadPhase3,settings:loadSettings,apply:resetApply})[name]?.()}
+function resetApply(){document.getElementById("step1").style.display="block";document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="none";document.getElementById("raw-input").value="";setStepIndicator(1)}
+function setStepIndicator(n){const s1=document.getElementById("step-ind-1"),s2=document.getElementById("step-ind-2");if(n===1){s1.className="step active";s2.className="step"}else{s1.className="step done";s2.className="step active"}}
+async function doAnalyze(){const raw=document.getElementById("raw-input").value.trim();if(!raw){toast("申請内容を入力してください","error");return}const btn=document.getElementById("btn-analyze");btn.disabled=true;btn.querySelector("span").textContent="AI分析中...";try{const d=await api("POST","/api/requests/analyze",{raw_input:raw});_currentDraft={...d,raw_input:raw};fillStep2(d);document.getElementById("step1").style.display="none";document.getElementById("step2").style.display="block";setStepIndicator(2)}catch(e){toast("分析エラー: "+e.message,"error")}finally{btn.disabled=false;btn.querySelector("span").textContent="AIに分析してもらう ▶"}}
+function fillStep2(d){document.getElementById("sel-approval-type").value=d.approval_type;const sel=document.getElementById("sel-approver");sel.innerHTML=_approvers.map(a=>`<option value="${a.id}" data-name="${a.name}">${a.name}（${a.role==="admin"?"管理者":"マネージャー"}）</option>`).join("");sel.value=d.suggested_approver_id;document.getElementById("approver-reason").textContent=d.suggested_approver_reason||"—";const rm={low:"低",medium:"中",high:"高"},rc={low:"badge-risk-low",medium:"badge-risk-medium",high:"badge-risk-high"};document.getElementById("risk-badge").innerHTML=`<span class="badge ${rc[d.risk_level]}">${rm[d.risk_level]||d.risk_level}</span>`;const kpA=document.getElementById("key-points-area"),kpL=document.getElementById("key-points-list");if(d.key_points&&d.key_points.length){kpL.innerHTML=d.key_points.map(k=>`<li>${escHtml(k)}</li>`).join("");kpA.style.display="block"}else kpA.style.display="none";document.getElementById("draft-title").value=d.draft_title||"";document.getElementById("draft-body").value=d.draft_body||"";const cc=document.getElementById("code-deploy-card");if(d.extension_type==="code_deploy"&&d.extension_data&&!d.extension_data.error){cc.style.display="block";document.getElementById("diff-changed-lines").textContent=d.extension_data.changed_lines||0;renderDiff(d.extension_data.original_code,d.extension_data.new_code,"diff-block");document.getElementById("diff-report").textContent=(d.extension_data.diff_summary||"").replace(/<[^>]+>/g,"").substring(0,200)}else cc.style.display="none"}
+function backToStep1(){document.getElementById("step2").style.display="none";document.getElementById("step1").style.display="block";setStepIndicator(1)}
+async function doSubmit(){const sa=document.getElementById("sel-approver"),an=sa.options[sa.selectedIndex]?.dataset.name||"",payload={raw_input:_currentDraft.raw_input,approval_type:document.getElementById("sel-approval-type").value,draft_title:document.getElementById("draft-title").value,draft_body:document.getElementById("draft-body").value,approver_id:parseInt(sa.value),approver_name:an,extension_type:_currentDraft.extension_type||null,extension_data:_currentDraft.extension_data||null,auto_deploy:document.getElementById("chk-auto-deploy")?.checked??true};try{const r=await api("POST","/api/requests/submit",payload);document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="block";document.getElementById("done-msg").textContent=`${r.approver_name} さんに稟議書を送信しました`}catch(e){toast("送信エラー: "+e.message,"error")}}
+function toggleDiff(){const b=document.getElementById("diff-body"),a=document.getElementById("diff-arrow");b.classList.toggle("open");a.textContent=b.classList.contains("open")?"▼":"▶"}
+async function loadInbox(){try{const list=await api("GET","/api/requests/inbox"),el=document.getElementById("inbox-list");if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>承認待ちの申請はありません</div>`;return}el.innerHTML=list.map(r=>`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.requester_name)}</span><span>→ あなた</span>${typeBadge(r.approval_type)}${r.extension_type==="code_deploy"?`<span style="color:var(--orange);font-size:11px">🔧 コード変更あり</span>`:""}<span>${relTime(r.ts)}</span></div><div class="card-footer"><span></span><span style="font-size:12px;color:var(--accent)">詳細を見る →</span></div></div>`).join("")}catch(e){toast(e.message,"error")}}
+async function loadHistory(){try{const list=await api("GET","/api/requests/mine"),el=document.getElementById("history-list");if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div>申請履歴はまだありません</div>`;return}el.innerHTML=list.map(r=>{const si={pending:"⏳",approved:"✅",rejected:"❌",withdrawn:"🚫"}[r.status]||"❓";return`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.approver_name||"—")}</span><span class="badge badge-${r.status}">${si} ${statusLabel(r.status)}</span><span>${fmtDate(r.ts)}</span></div>${r.approver_comment?`<div style="margin-top:6px;font-size:12px;color:var(--txt2)">コメント: ${escHtml(r.approver_comment)}</div>`:""}</div>`}).join("")}catch(e){toast(e.message,"error")}}
+async function openDetail(id){_currentRequestId=id;try{const r=await api("GET",`/api/requests/${id}`);document.getElementById("modal-title").textContent=r.draft_title||"(タイトルなし)";document.getElementById("modal-requester").textContent=r.requester_name;document.getElementById("modal-type-badge").innerHTML=typeBadge(r.approval_type);document.getElementById("modal-ts").textContent=fmtDate(r.ts);document.getElementById("modal-body-md").innerHTML=renderMarkdown(r.draft_body||"");const cs=document.getElementById("modal-code-section");if(r.extension_type==="code_deploy"&&r.extension_data){const ext=typeof r.extension_data==="string"?JSON.parse(r.extension_data):r.extension_data;if(!ext.error){cs.style.display="block";document.getElementById("modal-auto-deploy-note").textContent=ext.auto_deploy?"承認後: 自動で本番反映":"承認後: 手動反映";document.getElementById("modal-diff-lines").textContent=ext.changed_lines||0;renderDiff(ext.original_code,ext.new_code,"modal-diff-block")}else cs.style.display="none"}else cs.style.display="none";const ca=_user.role!=="staff"&&r.approver_id===_user.id&&r.status==="pending";["modal-approve-area","modal-reject-area"].forEach(id=>document.getElementById(id).style.display=ca?"block":"none");["btn-approve","btn-reject"].forEach(id=>document.getElementById(id).style.display=ca?"inline-flex":"none");document.getElementById("modal-comment").value="";document.getElementById("modal-reject-comment").value="";const ra=document.getElementById("modal-resolved-area");if(r.status!=="pending"){ra.style.display="block";const si={approved:"✅",rejected:"❌",withdrawn:"🚫"}[r.status]||"";document.getElementById("modal-resolved-badge").innerHTML=`<span class="badge badge-${r.status}">${si} ${statusLabel(r.status)}</span>`;document.getElementById("modal-resolved-comment").textContent=r.approver_comment?`コメント: ${r.approver_comment}`:""}else ra.style.display="none";document.getElementById("detail-modal").classList.add("open")}catch(e){toast(e.message,"error")}}
+function closeModal(){document.getElementById("detail-modal").classList.remove("open");document.getElementById("modal-diff-body").classList.remove("open");document.getElementById("modal-diff-arrow").textContent="▶"}
+async function doApprove(){const c=document.getElementById("modal-comment").value;try{await api("POST",`/api/requests/${_currentRequestId}/approve`,{comment:c||null});toast("承認しました","success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
+async function doReject(){const c=document.getElementById("modal-reject-comment").value.trim();if(!c){toast("差し戻しコメントを入力してください","error");return}try{await api("POST",`/api/requests/${_currentRequestId}/reject`,{comment:c});toast("差し戻しました","success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
+function toggleModalDiff(){const b=document.getElementById("modal-diff-body"),a=document.getElementById("modal-diff-arrow");b.classList.toggle("open");a.textContent=b.classList.contains("open")?"▼":"▶"}
+document.getElementById("detail-modal").addEventListener("click",function(e){if(e.target===this)closeModal()});
+async function loadPhase3(){try{const d=await api("GET","/api/phase3/stats");document.getElementById("phase3-approver-tbody").innerHTML=d.by_approver.map(a=>`<tr><td>${escHtml(a.approver_name)}</td><td>${a.avg_hours}h</td><td>${a.approval_rate}%</td><td>${a.approved}件 / ${a.total}件</td></tr>`).join("")||`<tr><td colspan="4" style="color:var(--txt2);text-align:center">データなし</td></tr>`;const tl={confirm:"確認型",notify:"通知型",judge:"判断型",consensus:"合議型"},te=document.getElementById("phase3-type-stats"),en=Object.entries(d.by_type||{});te.innerHTML=en.length?en.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>${tl[k]||k}</span><span style="color:var(--accent);font-weight:600">平均 ${v}h</span></div>`).join(""):`<div style="color:var(--txt2);font-size:13px">データなし</div>`;document.getElementById("phase3-automation-msg").textContent=d.automation_candidates>0?`確認型かつ承認済みの申請が${d.automation_candidates}件あります。将来的な自動承認の検討を推奨します。`:"現時点で自動化候補はありません。"}catch(e){toast(e.message,"error")}}
+async function loadSettings(){const el=document.getElementById("settings-list"),approvers=await api("GET","/api/approvers").catch(()=>[]);if(!approvers.length){el.innerHTML=`<div class="empty">承認者なし</div>`;return}el.innerHTML="";for(const a of approvers){const s=await api("GET",`/api/phase3/settings/${a.id}`).catch(()=>({auto_route_rules:{},notes:""}));const rules=s.auto_route_rules||{};const div=document.createElement("div");div.className="card";div.innerHTML=`<div class="card-title" style="margin-bottom:14px">${escHtml(a.name)} の設定</div><div style="margin-bottom:12px;font-size:13px;color:var(--txt2);font-weight:500">自動ルーティングする申請タイプ：</div>${["code_deploy","judge","consensus","notify"].map(k=>{const lb={code_deploy:"コード変更（code_deploy）",judge:"判断型",consensus:"合議型",notify:"通知型"};return`<label class="check-row"><input type="checkbox" data-uid="${a.id}" data-key="${k}" ${rules[k]?"checked":""}>${lb[k]}</label>`}).join("")}<div class="form-group" style="margin-top:12px"><label>メモ</label><textarea class="settings-notes" data-uid="${a.id}" rows="2">${escHtml(s.notes||"")}</textarea></div><button class="btn btn-primary btn-sm" onclick="saveSettings(${a.id},this)">保存</button>`;el.appendChild(div)}}
+async function saveSettings(uid,btn){const rules={};document.querySelectorAll(`input[type=checkbox][data-uid="${uid}"]`).forEach(cb=>{rules[cb.dataset.key]=cb.checked});const notes=document.querySelector(`.settings-notes[data-uid="${uid}"]`).value;try{await api("PUT",`/api/phase3/settings/${uid}`,{auto_route_rules:rules,notes});toast("設定を保存しました","success")}catch(e){toast(e.message,"error")}}
+function typeBadge(t){const lb={confirm:"確認型",notify:"通知型",judge:"判断型",consensus:"合議型"},cl={confirm:"badge-confirm",notify:"badge-notify",judge:"badge-judge",consensus:"badge-consensus"};return`<span class="badge ${cl[t]||""}}">${lb[t]||t}</span>`}
+function statusLabel(s){return{pending:"承認待ち",approved:"承認済み",rejected:"差し戻し",withdrawn:"取り下げ"}[s]||s}
+function relTime(ts){const d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return"たった今";if(d<3600)return`${Math.floor(d/60)}分前`;if(d<86400)return`${Math.floor(d/3600)}時間前`;return`${Math.floor(d/86400)}日前`}
+function fmtDate(ts){return ts?ts.replace("T"," ").substring(0,16):"—"}
+function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function renderMarkdown(md){let h=escHtml(md);h=h.replace(/^## (.+)$/gm,"<h2>$1</h2>");h=h.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");h=h.replace(/^[-・] (.+)$/gm,"<li>$1</li>");h=h.replace(/((?:<li>.*<\/li>\n?)+)/s,"<ul>$1</ul>");h=h.replace(/\n\n/g,"<br><br>");return h}
+function renderDiff(orig,newCode,targetId){if(!orig||!newCode){document.getElementById(targetId).textContent="差分データなし";return}const ol=orig.split("\n"),nl=newCode.split("\n"),ml=Math.max(ol.length,nl.length);let h="";for(let i=0;i<Math.min(ml,200);i++){const o=ol[i],n=nl[i];if(o===undefined)h+=`<div class="da">+ ${escHtml(n)}</div>`;else if(n===undefined)h+=`<div class="dd">- ${escHtml(o)}</div>`;else if(o!==n)h+=`<div class="dd">- ${escHtml(o)}</div><div class="da">+ ${escHtml(n)}</div>`;else h+=`<div class="dc">  ${escHtml(o)}</div>`}document.getElementById(targetId).innerHTML=h}
+function toast(msg,type=""){const el=document.getElementById("toast");el.textContent=msg;el.className="show "+type;setTimeout(()=>{el.className=""},3000)}
 </script>
 </body>
 </html>
