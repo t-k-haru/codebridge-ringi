@@ -2,9 +2,9 @@
 # CodeBridge Ringi — Azure App Service デプロイスクリプト
 # 実行前に az login を済ませておくこと
 
-RESOURCE_GROUP="codebridge-ringi-rg"
-LOCATION="japaneast"
-APP_SERVICE_PLAN="codebridge-ringi-plan"
+RESOURCE_GROUP="codebridge-rg"
+LOCATION="westus2"
+APP_SERVICE_PLAN="codebridge-plan2"
 APP_NAME="codebridge-ringi"
 ACR_NAME="codebridgeringiacr"
 
