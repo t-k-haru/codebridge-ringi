@@ -21,8 +21,8 @@ jobs:
             -x "frontend/*" "*.zip" ".git/*" ".env" \
             "__pycache__/*" "*.pyc" ".DS_Store"
           az webapp deploy \
-            --name codebridge-t-k-haru \
-            --resource-group codebridge-rg \
+            --name codebridge-ringi \
+            --resource-group codebridge-ringi-rg \
             --src-path backend.zip \
             --type zip \
             --async true

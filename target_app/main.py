@@ -1,7 +1,6 @@
 """
 CodeBridgeデモ用Flaskサーバー。
 target_app/demo.html（shift.nobushiデモのローカルコピー）を配信する。
-shift.nobushi.jpの本番サーバーには一切接触しない。
 """
 from flask import Flask, send_file, jsonify
 from pathlib import Path
