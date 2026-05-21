@@ -22,7 +22,7 @@ jobs:
             "__pycache__/*" "*.pyc" ".DS_Store"
           az webapp deploy \
             --name codebridge-ringi \
-            --resource-group codebridge-ringi-rg \
+            --resource-group codebridge-rg \
             --src-path backend.zip \
             --type zip \
             --async true
