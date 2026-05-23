@@ -24,5 +24,4 @@ jobs:
             --name codebridge-ringi \
             --resource-group codebridge-rg \
             --src-path app.zip \
-            --type zip \
-            --async true
+            --type zip
