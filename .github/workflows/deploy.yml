@@ -1,4 +1,4 @@
-name: Deploy Backend to Azure App Service
+name: Deploy to Azure App Service
 
 on:
   push:
@@ -17,12 +17,12 @@ jobs:
 
       - name: Deploy to App Service
         run: |
-          zip -r backend.zip . \
-            -x "frontend/*" "*.zip" ".git/*" ".env" \
+          zip -r app.zip . \
+            -x "*.zip" ".git/*" ".env" \
             "__pycache__/*" "*.pyc" ".DS_Store"
           az webapp deploy \
             --name codebridge-ringi \
             --resource-group codebridge-rg \
-            --src-path backend.zip \
+            --src-path app.zip \
             --type zip \
             --async true
