@@ -109,7 +109,26 @@ def list_approvers():
 
 def list_users():
     with _conn() as c:
-        return [dict(r) for r in c.execute("SELECT id,name,email,role,created FROM users ORDER BY id")]
+        return [dict(r) for r in c.execute("SELECT id,name,email,role,active,created FROM users ORDER BY id")]
+
+
+def update_user_role(user_id: int, role: str):
+    with _conn() as c:
+        c.execute("UPDATE users SET role=? WHERE id=?", (role, user_id))
+
+
+def toggle_user_active(user_id: int, active: bool):
+    with _conn() as c:
+        c.execute("UPDATE users SET active=? WHERE id=?", (1 if active else 0, user_id))
+
+
+def reset_password(user_id: int) -> str:
+    import secrets as sec, string
+    chars = string.ascii_letters + string.digits
+    temp_pw = "".join(sec.choice(chars) for _ in range(10))
+    with _conn() as c:
+        c.execute("UPDATE users SET pw_hash=? WHERE id=?", (_hash(temp_pw), user_id))
+    return temp_pw
 
 
 def list_users_by_role(role: str) -> list:

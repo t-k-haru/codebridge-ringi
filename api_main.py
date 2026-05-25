@@ -82,6 +82,12 @@ class ApproverSettingsReq(BaseModel):
     auto_route_rules: dict
     notes: str = ""
 
+class RoleUpdateReq(BaseModel):
+    role: str
+
+class ActiveUpdateReq(BaseModel):
+    active: bool
+
 
 @app.post("/api/login")
 def login(req: LoginReq):
@@ -252,21 +258,44 @@ def approver_stats(uid: int, user=Depends(get_current_user)):
     return auth.get_approver_detail_stats(uid)
 
 
-@app.get("/api/phase3/stats/as/{view_role}/{view_user_id}")
-def phase3_stats_as(view_role: str, view_user_id: int,
-                    user=Depends(require_roles("admin"))):
-    if view_role == "manager":
-        ids = auth.get_visible_approver_ids_for_role("manager", view_user_id)
-        return auth.get_phase3_stats(user_ids=ids)
-    elif view_role == "staff":
-        return auth.get_phase3_stats(user_ids=[view_user_id])
-    else:
-        raise HTTPException(400, "Invalid view_role")
-
-
 @app.get("/api/users/by_role/{role}")
 def users_by_role(role: str, user=Depends(require_roles("admin"))):
     return auth.list_users_by_role(role)
+
+
+@app.get("/api/admin/users")
+def list_all_users(user=Depends(require_roles("admin"))):
+    return auth.list_users()
+
+
+@app.put("/api/admin/users/{user_id}/role")
+def update_user_role(user_id: int, req: RoleUpdateReq, user=Depends(require_roles("admin"))):
+    if user_id == user["id"]:
+        raise HTTPException(400, "自分自身の役割は変更できません")
+    if req.role not in ("admin", "manager", "staff"):
+        raise HTTPException(400, "Invalid role")
+    auth.update_user_role(user_id, req.role)
+    auth.log_action(user["id"], user["name"], "update_role",
+                    f"target_user_id={user_id} new_role={req.role}")
+    return {"ok": True}
+
+
+@app.put("/api/admin/users/{user_id}/active")
+def toggle_user_active(user_id: int, req: ActiveUpdateReq, user=Depends(require_roles("admin"))):
+    if user_id == user["id"]:
+        raise HTTPException(400, "自分自身を無効化できません")
+    auth.toggle_user_active(user_id, req.active)
+    auth.log_action(user["id"], user["name"], "toggle_active",
+                    f"target_user_id={user_id} active={req.active}")
+    return {"ok": True}
+
+
+@app.post("/api/admin/users/{user_id}/reset_password")
+def reset_password_endpoint(user_id: int, user=Depends(require_roles("admin"))):
+    temp_pw = auth.reset_password(user_id)
+    auth.log_action(user["id"], user["name"], "reset_password",
+                    f"target_user_id={user_id}")
+    return {"temp_password": temp_pw}
 
 
 @app.get("/api/phase3/settings/{uid}")
