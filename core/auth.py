@@ -112,6 +112,14 @@ def list_users():
         return [dict(r) for r in c.execute("SELECT id,name,email,role,created FROM users ORDER BY id")]
 
 
+def list_users_by_role(role: str) -> list:
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT id, name FROM users WHERE role=? AND active=1 ORDER BY id", (role,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def create_request(requester_id, requester_name, raw_input, approval_type,
                    draft_title, draft_body, approver_id, approver_name,
                    extension_type=None, extension_data=None):

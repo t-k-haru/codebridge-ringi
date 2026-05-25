@@ -252,6 +252,23 @@ def approver_stats(uid: int, user=Depends(get_current_user)):
     return auth.get_approver_detail_stats(uid)
 
 
+@app.get("/api/phase3/stats/as/{view_role}/{view_user_id}")
+def phase3_stats_as(view_role: str, view_user_id: int,
+                    user=Depends(require_roles("admin"))):
+    if view_role == "manager":
+        ids = auth.get_visible_approver_ids_for_role("manager", view_user_id)
+        return auth.get_phase3_stats(user_ids=ids)
+    elif view_role == "staff":
+        return auth.get_phase3_stats(user_ids=[view_user_id])
+    else:
+        raise HTTPException(400, "Invalid view_role")
+
+
+@app.get("/api/users/by_role/{role}")
+def users_by_role(role: str, user=Depends(require_roles("admin"))):
+    return auth.list_users_by_role(role)
+
+
 @app.get("/api/phase3/settings/{uid}")
 def get_settings(uid: int, user=Depends(require_roles("admin"))):
     return auth.get_approver_settings(uid)
