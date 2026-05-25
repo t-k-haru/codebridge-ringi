@@ -88,6 +88,10 @@ class RoleUpdateReq(BaseModel):
 class ActiveUpdateReq(BaseModel):
     active: bool
 
+class ChangePasswordReq(BaseModel):
+    current_password: str
+    new_password: str
+
 
 @app.post("/api/login")
 def login(req: LoginReq):
@@ -113,6 +117,19 @@ def logout(authorization: Optional[str] = Header(None)):
 def me(user=Depends(get_current_user)):
     return {"id": user["id"], "name": user["name"],
             "email": user["email"], "role": user["role"]}
+
+
+@app.post("/api/me/password")
+def change_my_password(req: ChangePasswordReq, user=Depends(get_current_user)):
+    if not auth.login(user["email"], req.current_password):
+        raise HTTPException(400, "現在のパスワードが正しくありません")
+    if len(req.new_password) < 8:
+        raise HTTPException(400, "新しいパスワードは8文字以上で入力してください")
+    if req.current_password == req.new_password:
+        raise HTTPException(400, "新しいパスワードが現在のパスワードと同じです")
+    auth.change_password(user["id"], req.new_password)
+    auth.log_action(user["id"], user["name"], "change_password_self", "")
+    return {"ok": True}
 
 
 @app.post("/api/requests/analyze")
