@@ -131,6 +131,11 @@ def reset_password(user_id: int) -> str:
     return temp_pw
 
 
+def change_password(user_id: int, new_password: str):
+    with _conn() as c:
+        c.execute("UPDATE users SET pw_hash=? WHERE id=?", (_hash(new_password), user_id))
+
+
 def list_users_by_role(role: str) -> list:
     with _conn() as c:
         rows = c.execute(

@@ -133,6 +133,7 @@ select option{background:var(--sfc2)}
     <div id="nav-phase3" class="nav-item" onclick="showPage('phase3')" style="display:none"><span class="icon">📊</span>Phase 3</div>
     <div id="nav-settings" class="nav-item" onclick="showPage('settings')" style="display:none"><span class="icon">⚙️</span>承認者設定</div>
     <div id="nav-usermgmt" class="nav-item" onclick="showPage('usermgmt')" style="display:none"><span class="icon">👥</span>ユーザー管理</div>
+    <div id="nav-account" class="nav-item" onclick="showPage('account')" style="display:none"><span class="icon">⚙</span>設定</div>
     <div class="bottom">
       <div class="user-name" id="sidebar-name"></div>
       <div class="user-role" id="sidebar-role"></div>
@@ -233,6 +234,17 @@ select option{background:var(--sfc2)}
         <table class="data-table"><thead><tr><th>名前</th><th>メール</th><th>役割</th><th>状態</th><th>操作</th></tr></thead><tbody id="usermgmt-tbody"></tbody></table>
       </div>
     </div>
+    <div id="page-account" class="page">
+      <div class="page-title">⚙ 設定</div>
+      <div class="card" style="max-width:480px">
+        <div class="card-title" style="margin-bottom:14px">🔑 パスワード変更</div>
+        <div class="form-group"><label>現在のパスワード</label><div style="position:relative"><input id="pw-current" type="password" autocomplete="current-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-current',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
+        <div class="form-group"><label>新しいパスワード</label><div style="position:relative"><input id="pw-new" type="password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-new',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
+        <div class="form-group"><label>新しいパスワード（確認）</label><div style="position:relative"><input id="pw-new2" type="password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-new2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
+        <div id="pw-change-err" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></div>
+        <button class="btn btn-primary" onclick="doChangePassword()">変更する</button>
+      </div>
+    </div>
   </main>
 </div>
 <div class="modal-overlay" id="detail-modal">
@@ -289,8 +301,8 @@ async function doLogout(){await api("POST","/api/logout").catch(()=>{});_token=n
 document.getElementById("login-password").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
 function toggleSidebar(){const isMobile=window.innerWidth<=768,app=document.getElementById("app"),btn=document.getElementById("sidebar-toggle");if(isMobile){const isOpen=app.classList.contains("sidebar-open");if(isOpen){app.classList.remove("sidebar-open");btn.textContent="☰"}else{app.classList.add("sidebar-open");btn.textContent="✕"}}else{const col=app.classList.toggle("sidebar-collapsed");btn.textContent=col?"☰":"✕"}}
 function closeSidebar(){document.getElementById("app").classList.remove("sidebar-open");document.getElementById("sidebar-toggle").textContent="☰"}
-function setupNav(){document.getElementById("sidebar-name").textContent=_user.name;const rl={admin:"管理者",manager:"マネージャー",staff:"一般"};document.getElementById("sidebar-role").textContent=rl[_user.role]||_user.role;if(_user.role!=="staff")document.getElementById("nav-inbox").style.display="flex";document.getElementById("nav-phase3").style.display="flex";if(_user.role==="admin"){document.getElementById("nav-settings").style.display="flex";document.getElementById("nav-usermgmt").style.display="flex"}if(window.innerWidth>768)document.getElementById("sidebar-toggle").textContent="✕"}
-function showPage(name){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));document.getElementById("page-"+name)?.classList.add("active");document.getElementById("nav-"+name)?.classList.add("active");({inbox:loadInbox,history:loadHistory,phase3:loadPhase3,settings:loadSettings,apply:resetApply,usermgmt:loadUserMgmt})[name]?.()}
+function setupNav(){document.getElementById("sidebar-name").textContent=_user.name;const rl={admin:"管理者",manager:"マネージャー",staff:"一般"};document.getElementById("sidebar-role").textContent=rl[_user.role]||_user.role;if(_user.role!=="staff")document.getElementById("nav-inbox").style.display="flex";document.getElementById("nav-phase3").style.display="flex";if(_user.role==="admin"){document.getElementById("nav-settings").style.display="flex";document.getElementById("nav-usermgmt").style.display="flex"}document.getElementById("nav-account").style.display="flex";if(window.innerWidth>768)document.getElementById("sidebar-toggle").textContent="✕"}
+function showPage(name){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));document.getElementById("page-"+name)?.classList.add("active");document.getElementById("nav-"+name)?.classList.add("active");({inbox:loadInbox,history:loadHistory,phase3:loadPhase3,settings:loadSettings,apply:resetApply,usermgmt:loadUserMgmt,account:loadAccount})[name]?.()}
 function resetApply(){document.getElementById("step1").style.display="block";document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="none";document.getElementById("raw-input").value="";setStepIndicator(1)}
 function setStepIndicator(n){const s1=document.getElementById("step-ind-1"),s2=document.getElementById("step-ind-2");if(n===1){s1.className="step active";s2.className="step"}else{s1.className="step done";s2.className="step active"}}
 async function doAnalyze(){const raw=document.getElementById("raw-input").value.trim();if(!raw){toast("申請内容を入力してください","error");return}const btn=document.getElementById("btn-analyze");btn.disabled=true;btn.querySelector("span").textContent="AI分析中...";try{const d=await api("POST","/api/requests/analyze",{raw_input:raw});_currentDraft={...d,raw_input:raw};fillStep2(d);document.getElementById("step1").style.display="none";document.getElementById("step2").style.display="block";setStepIndicator(2)}catch(e){toast("分析エラー: "+e.message,"error")}finally{btn.disabled=false;btn.querySelector("span").textContent="AIに分析してもらう ▶"}}
@@ -325,6 +337,9 @@ function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt
 function renderMarkdown(md){let h=escHtml(md);h=h.replace(/^## (.+)$/gm,"<h2>$1</h2>");h=h.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");h=h.replace(/^[-・] (.+)$/gm,"<li>$1</li>");h=h.replace(/((?:<li>.*<\/li>\n?)+)/s,"<ul>$1</ul>");h=h.replace(/\n\n/g,"<br><br>");return h}
 function renderDiff(orig,newCode,targetId){if(!orig||!newCode){document.getElementById(targetId).textContent="差分データなし";return}const ol=orig.split("\n"),nl=newCode.split("\n"),ml=Math.max(ol.length,nl.length);let h="";for(let i=0;i<Math.min(ml,200);i++){const o=ol[i],n=nl[i];if(o===undefined)h+=`<div class="da">+ ${escHtml(n)}</div>`;else if(n===undefined)h+=`<div class="dd">- ${escHtml(o)}</div>`;else if(o!==n)h+=`<div class="dd">- ${escHtml(o)}</div><div class="da">+ ${escHtml(n)}</div>`;else h+=`<div class="dc">  ${escHtml(o)}</div>`}document.getElementById(targetId).innerHTML=h}
 function toast(msg,type=""){const el=document.getElementById("toast");el.textContent=msg;el.className="show "+type;setTimeout(()=>{el.className=""},3000)}
+function loadAccount(){["pw-current","pw-new","pw-new2"].forEach(id=>document.getElementById(id).value="");const e=document.getElementById("pw-change-err");e.style.display="none";e.textContent=""}
+function togglePwVis(id,btn){const el=document.getElementById(id);el.type=el.type==="password"?"text":"password";btn.textContent=el.type==="password"?"👁":"🙈"}
+async function doChangePassword(){const cur=document.getElementById("pw-current").value,nw=document.getElementById("pw-new").value,nw2=document.getElementById("pw-new2").value,err=document.getElementById("pw-change-err");err.style.display="none";if(nw!==nw2){err.textContent="新しいパスワードが一致しません";err.style.display="block";return}if(nw.length<8){err.textContent="8文字以上で入力してください";err.style.display="block";return}try{await api("POST","/api/me/password",{current_password:cur,new_password:nw});toast("パスワードを変更しました","success");loadAccount()}catch(e){err.textContent=e.message;err.style.display="block"}}
 </script>
 </body>
 </html>
