@@ -185,16 +185,31 @@ def update_approver_settings(user_id, auto_route_rules, notes):
         )
 
 
-def get_phase3_stats():
+def get_user_ids_for_manager(manager_id: int) -> list:
+    with _conn() as c:
+        rows = c.execute(
+            "SELECT id FROM users WHERE role = 'staff' OR id = ?", (manager_id,)
+        ).fetchall()
+    return [r["id"] for r in rows]
+
+
+def get_phase3_stats(user_ids=None):
+    def _req_filter(base_sql, params):
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            return f"{base_sql} AND requester_id IN ({ph})", params + list(user_ids)
+        return base_sql, params
+
     with _conn() as c:
         approvers = c.execute(
             "SELECT id, name FROM users WHERE role IN ('manager','admin')"
         ).fetchall()
         by_approver = []
         for a in approvers:
-            rows = c.execute(
-                "SELECT status, ts, resolved_at FROM requests WHERE approver_id=?", (a["id"],)
-            ).fetchall()
+            sql, params = _req_filter(
+                "SELECT status, ts, resolved_at FROM requests WHERE approver_id=?", [a["id"]]
+            )
+            rows = c.execute(sql, params).fetchall()
             total = len(rows)
             approved = sum(1 for r in rows if r["status"] == "approved")
             times = []
@@ -216,12 +231,14 @@ def get_phase3_stats():
                 "total": total,
                 "approved": approved,
             })
-        type_rows = c.execute(
-            "SELECT approval_type, ts, resolved_at FROM requests WHERE status='approved'"
-        ).fetchall()
-        automation_count = c.execute(
-            "SELECT COUNT(*) FROM requests WHERE approval_type='confirm' AND status='approved'"
-        ).fetchone()[0]
+        type_sql, type_params = _req_filter(
+            "SELECT approval_type, ts, resolved_at FROM requests WHERE status='approved'", []
+        )
+        type_rows = c.execute(type_sql, type_params).fetchall()
+        auto_sql, auto_params = _req_filter(
+            "SELECT COUNT(*) FROM requests WHERE approval_type='confirm' AND status='approved'", []
+        )
+        automation_count = c.execute(auto_sql, auto_params).fetchone()[0]
     type_stats: dict = {}
     for r in type_rows:
         t = r["approval_type"]

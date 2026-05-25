@@ -227,12 +227,24 @@ def _execute_extension(ringi: dict):
 
 
 @app.get("/api/phase3/stats")
-def phase3_stats(user=Depends(require_roles("admin"))):
-    return auth.get_phase3_stats()
+def phase3_stats(user=Depends(get_current_user)):
+    role = user["role"]
+    if role == "admin":
+        return auth.get_phase3_stats()
+    elif role == "manager":
+        return auth.get_phase3_stats(user_ids=auth.get_user_ids_for_manager(user["id"]))
+    else:
+        return auth.get_phase3_stats(user_ids=[user["id"]])
 
 
 @app.get("/api/phase3/approver/{uid}")
-def approver_stats(uid: int, user=Depends(require_roles("admin"))):
+def approver_stats(uid: int, user=Depends(get_current_user)):
+    if user["role"] == "admin":
+        pass
+    elif user["role"] == "manager" and user["id"] == uid:
+        pass
+    else:
+        raise HTTPException(403, "Forbidden")
     return auth.get_approver_detail_stats(uid)
 
 
