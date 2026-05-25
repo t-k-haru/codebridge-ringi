@@ -232,7 +232,8 @@ def phase3_stats(user=Depends(get_current_user)):
     if role == "admin":
         return auth.get_phase3_stats()
     elif role == "manager":
-        return auth.get_phase3_stats(user_ids=auth.get_user_ids_for_manager(user["id"]))
+        ids = auth.get_visible_approver_ids_for_role("manager", user["id"])
+        return auth.get_phase3_stats(user_ids=ids)
     else:
         return auth.get_phase3_stats(user_ids=[user["id"]])
 
@@ -241,10 +242,13 @@ def phase3_stats(user=Depends(get_current_user)):
 def approver_stats(uid: int, user=Depends(get_current_user)):
     if user["role"] == "admin":
         pass
-    elif user["role"] == "manager" and user["id"] == uid:
-        pass
+    elif user["role"] == "manager":
+        allowed = auth.get_visible_approver_ids_for_role("manager", user["id"])
+        if uid not in allowed:
+            raise HTTPException(403, "Forbidden")
     else:
-        raise HTTPException(403, "Forbidden")
+        if uid != user["id"]:
+            raise HTTPException(403, "Forbidden")
     return auth.get_approver_detail_stats(uid)
 
 

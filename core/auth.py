@@ -193,6 +193,21 @@ def get_user_ids_for_manager(manager_id: int) -> list:
     return [r["id"] for r in rows]
 
 
+def get_visible_approver_ids_for_role(role: str, user_id: int) -> list:
+    """ロールに応じて表示可能なユーザーIDリストを返す。
+    admin: 全ユーザー / manager: 自分 + staff / staff: 自分のみ"""
+    with _conn() as c:
+        if role == "admin":
+            rows = c.execute("SELECT id FROM users").fetchall()
+        elif role == "manager":
+            rows = c.execute(
+                "SELECT id FROM users WHERE role = 'staff' OR id = ?", (user_id,)
+            ).fetchall()
+        else:
+            return [user_id]
+    return [r["id"] for r in rows]
+
+
 def get_phase3_stats(user_ids=None):
     def _req_filter(base_sql, params):
         if user_ids:
@@ -201,9 +216,17 @@ def get_phase3_stats(user_ids=None):
         return base_sql, params
 
     with _conn() as c:
-        approvers = c.execute(
-            "SELECT id, name FROM users WHERE role IN ('manager','admin')"
-        ).fetchall()
+        # user_ids が指定された場合は承認者リストも同じ範囲に絞る
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            approvers = c.execute(
+                f"SELECT id, name FROM users WHERE role IN ('manager','admin') AND id IN ({ph})",
+                list(user_ids),
+            ).fetchall()
+        else:
+            approvers = c.execute(
+                "SELECT id, name FROM users WHERE role IN ('manager','admin')"
+            ).fetchall()
         by_approver = []
         for a in approvers:
             sql, params = _req_filter(
