@@ -134,6 +134,7 @@ def login(req: LoginReq):
         "email": user["email"], "role": user["role"],
         "position_rank": user.get("position_rank"),
         "position_name": user.get("position_name"),
+        "can_approve": auth.user_can_approve(user["id"]),
     }}
 
 
