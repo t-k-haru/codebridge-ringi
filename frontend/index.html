@@ -2,14 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>CodeBridge Ringi</title>
 <style>
 :root{
-  --bg:#0f1117;--sfc:#1a1d27;--sfc2:#22263a;--bdr:#2e3248;
+  --bg:#000000;--sfc:#111111;--sfc2:#1a1a1a;--bdr:rgba(255,255,255,0.08);
   --txt:#e8eaf6;--txt2:#9499b5;--accent:#5c7cfa;--accent2:#4c6ef5;
   --green:#51cf66;--red:#ff6b6b;--yellow:#ffd43b;--orange:#ff922b;
-  --radius:10px;
+  --radius:10px;--diff-bg:#0a0d15;
+}
+:root.theme-light{
+  --bg:#f5f5f7;--sfc:#ffffff;--sfc2:#f0f0f5;--bdr:rgba(0,0,0,0.1);
+  --txt:#1a1a2e;--txt2:#6c7080;--diff-bg:#f0f0f0;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6}
@@ -21,10 +25,13 @@ a{color:var(--accent);text-decoration:none}
 .nav-item{padding:10px 20px;cursor:pointer;transition:.15s;color:var(--txt2);display:flex;align-items:center;gap:10px;font-size:13px}
 .nav-item:hover{background:var(--sfc2);color:var(--txt)}
 .nav-item.active{background:var(--accent);color:#fff}
-.nav-item .icon{font-size:16px;width:20px;text-align:center}
 #sidebar .bottom{margin-top:auto;padding:16px 20px;border-top:1px solid var(--bdr)}
 .user-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}
 .user-role{font-size:11px;color:var(--accent)}
+.sidebar-prefs{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.pref-btn{padding:5px 8px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt2);cursor:pointer;font-size:11px;font-weight:600;transition:.15s}
+.pref-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pref-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn-logout{margin-top:10px;width:100%;padding:8px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt2);cursor:pointer;font-size:12px;transition:.15s}
 .btn-logout:hover{background:var(--red);color:#fff;border-color:var(--red)}
 #main{flex:1;overflow-y:auto;padding:64px 32px 32px}
@@ -51,7 +58,7 @@ a{color:var(--accent);text-decoration:none}
 .badge-risk-high{background:rgba(255,107,107,.15);color:var(--red)}
 .form-group{margin-bottom:16px}
 label{display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;font-weight:500}
-input,select,textarea{width:100%;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;color:var(--txt);font-size:14px;font-family:inherit;transition:.15s}
+input,select,textarea{width:100%;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;color:var(--txt);font-size:16px;font-family:inherit;transition:.15s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 textarea{resize:vertical;min-height:120px}
 select option{background:var(--sfc2)}
@@ -77,7 +84,7 @@ select option{background:var(--sfc2)}
 .step.active .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
 .step.done .step-num{background:var(--green);border-color:var(--green);color:#000}
 .step-sep{width:32px;height:1px;background:var(--bdr)}
-.diff-block{background:#0a0d15;border:1px solid var(--bdr);border-radius:6px;padding:12px;font-family:monospace;font-size:12px;overflow-x:auto;margin-top:8px}
+.diff-block{background:var(--diff-bg);border:1px solid var(--bdr);border-radius:6px;padding:12px;font-family:monospace;font-size:12px;overflow-x:auto;margin-top:8px}
 .da{color:var(--green)}.dd{color:var(--red)}.dc{color:var(--txt2)}
 .accordion-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--accent)}
 .accordion-body{display:none;margin-top:10px}
@@ -98,7 +105,6 @@ select option{background:var(--sfc2)}
 .check-row{display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;font-size:13px}
 .check-row input[type=checkbox]{width:auto}
 .empty{text-align:center;padding:48px 0;color:var(--txt2)}
-.empty-icon{font-size:36px;margin-bottom:12px}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:8px;padding:12px 18px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:.3s;max-width:320px}
 #toast.show{transform:translateY(0);opacity:1}
 #toast.success{border-color:var(--green);color:var(--green)}
@@ -108,151 +114,171 @@ select option{background:var(--sfc2)}
 #sidebar{transition:transform .2s ease,margin-left .2s ease}
 #app.sidebar-collapsed #sidebar{transform:translateX(-220px);margin-left:-220px}
 #sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49}
-@media(max-width:768px){#sidebar{position:fixed;top:0;left:0;bottom:0;height:100%;z-index:50;transform:translateX(-220px);transition:transform .2s ease}#app.sidebar-open #sidebar{transform:translateX(0)}#app.sidebar-open #sidebar-overlay{display:block}#main{padding:16px;padding-top:64px}}
+.user-mgmt-table{display:block}
+.user-cards{display:none}
+@media(max-width:768px){
+  #sidebar{position:fixed;top:0;left:0;bottom:0;height:100%;z-index:50;transform:translateX(-220px);transition:transform .2s ease}
+  #app.sidebar-open #sidebar{transform:translateX(0)}
+  #app.sidebar-open #sidebar-overlay{display:block}
+  #main{padding:16px;padding-top:64px}
+  .user-mgmt-table{display:none}
+  .user-cards{display:block}
+  .user-card{background:var(--sfc);border:1px solid var(--bdr);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+  .user-card-name{font-weight:600;font-size:14px;margin-bottom:2px}
+  .user-card-email{font-size:12px;color:var(--txt2);margin-bottom:8px}
+  .user-card-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .user-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+}
 </style>
 </head>
 <body>
 <div id="login-page">
   <div class="login-card">
     <div class="login-title">CodeBridge Ringi</div>
-    <div class="login-sub">稟議AIエージェント</div>
-    <div class="form-group"><label>メールアドレス</label><input id="login-email" type="email" placeholder="admin@codebridge.ai"></div>
-    <div class="form-group"><label>パスワード</label><input id="login-password" type="password" placeholder="••••••••"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">ログイン</button>
+    <div class="login-sub" data-i18n="loginSub">稟議AIエージェント</div>
+    <div class="form-group"><label data-i18n="email">メールアドレス</label><input id="login-email" type="email" placeholder="admin@codebridge.ai"></div>
+    <div class="form-group"><label data-i18n="password">パスワード</label><input id="login-password" type="password" placeholder="••••••••"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" data-i18n="login">ログイン</button>
     <div id="login-err" style="color:var(--red);font-size:12px;margin-top:10px;display:none"></div>
   </div>
 </div>
 <div id="app" style="display:none">
-  <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="サイドバーを開閉">☰</button>
+  <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="サイドバーを開閉">&#9776;</button>
   <div id="sidebar-overlay" onclick="closeSidebar()"></div>
   <nav id="sidebar">
     <div class="logo">Ringi AI<span>CodeBridge Ringi</span></div>
-    <div id="nav-inbox" class="nav-item" onclick="showPage('inbox')" style="display:none"><span class="icon">📥</span>受信トレイ</div>
-    <div id="nav-apply" class="nav-item" onclick="showPage('apply')"><span class="icon">✍️</span>申請する</div>
-    <div id="nav-history" class="nav-item" onclick="showPage('history')"><span class="icon">📋</span>申請履歴</div>
-    <div id="nav-phase3" class="nav-item" onclick="showPage('phase3')" style="display:none"><span class="icon">📊</span>Phase 3</div>
-    <div id="nav-settings" class="nav-item" onclick="showPage('settings')" style="display:none"><span class="icon">⚙️</span>承認者設定</div>
-    <div id="nav-usermgmt" class="nav-item" onclick="showPage('usermgmt')" style="display:none"><span class="icon">👥</span>ユーザー管理</div>
-    <div id="nav-positions" class="nav-item" onclick="showPage('positions')" style="display:none"><span class="icon">🏷</span>役職管理</div>
-    <div id="nav-account" class="nav-item" onclick="showPage('account')" style="display:none"><span class="icon">⚙</span>設定</div>
+    <div id="nav-inbox" class="nav-item" onclick="showPage('inbox')" style="display:none"><span data-i18n="navInbox">受信トレイ</span></div>
+    <div id="nav-apply" class="nav-item" onclick="showPage('apply')"><span data-i18n="navApply">申請する</span></div>
+    <div id="nav-history" class="nav-item" onclick="showPage('history')"><span data-i18n="navHistory">申請履歴</span></div>
+    <div id="nav-phase3" class="nav-item" onclick="showPage('phase3')" style="display:none"><span data-i18n="navPhase3">Phase 3</span></div>
+    <div id="nav-settings" class="nav-item" onclick="showPage('settings')" style="display:none"><span data-i18n="navSettings">承認者設定</span></div>
+    <div id="nav-usermgmt" class="nav-item" onclick="showPage('usermgmt')" style="display:none"><span data-i18n="navUsers">ユーザー管理</span></div>
+    <div id="nav-positions" class="nav-item" onclick="showPage('positions')" style="display:none"><span data-i18n="navPositions">役職管理</span></div>
+    <div id="nav-account" class="nav-item" onclick="showPage('account')" style="display:none"><span data-i18n="navAccount">設定</span></div>
     <div class="bottom">
       <div class="user-name" id="sidebar-name"></div>
       <div class="user-role" id="sidebar-role"></div>
-      <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+      <div class="sidebar-prefs">
+        <button class="pref-btn" id="btn-theme-dark" onclick="setTheme('dark')" data-i18n="themeDark">ダーク</button>
+        <button class="pref-btn" id="btn-theme-light" onclick="setTheme('light')" data-i18n="themeLight">ライト</button>
+        <button class="pref-btn" id="btn-lang-ja" onclick="setLang('ja')">JA</button>
+        <button class="pref-btn" id="btn-lang-en" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" data-i18n="logout">ログアウト</button>
     </div>
   </nav>
   <main id="main">
     <div id="page-inbox" class="page">
-      <div class="page-title">📥 受信トレイ</div>
+      <div class="page-title" data-i18n="navInbox">受信トレイ</div>
       <div id="inbox-list"></div>
     </div>
     <div id="page-apply" class="page">
-      <div class="page-title">✍️ 申請する</div>
+      <div class="page-title" data-i18n="navApply">申請する</div>
       <div class="steps">
-        <div class="step active" id="step-ind-1"><div class="step-num">1</div>内容入力</div>
+        <div class="step active" id="step-ind-1"><div class="step-num">1</div><span data-i18n="step1">内容入力</span></div>
         <div class="step-sep"></div>
-        <div class="step" id="step-ind-2"><div class="step-num">2</div>AI確認・編集</div>
+        <div class="step" id="step-ind-2"><div class="step-num">2</div><span data-i18n="step2">AI確認・編集</span></div>
       </div>
       <div id="step1">
         <div class="card">
           <div class="form-group">
-            <label>申請内容を自由に書いてください</label>
+            <label data-i18n="applyLabel">申請内容を自由に書いてください</label>
             <textarea id="raw-input" rows="6" placeholder="例：&#10;・残業45時間超のスタッフを赤字で表示してほしい&#10;・新しいSlackワークスペースを導入したい&#10;・来月の東京出張を申請したい"></textarea>
           </div>
-          <button class="btn btn-primary" onclick="doAnalyze()" id="btn-analyze"><span>AIに分析してもらう ▶</span></button>
+          <button class="btn btn-primary" onclick="doAnalyze()" id="btn-analyze"><span data-i18n="btnAnalyze">AIに分析してもらう ▶</span></button>
         </div>
       </div>
       <div id="step2" style="display:none">
         <div class="card" style="margin-bottom:12px;border-color:var(--accent);background:rgba(92,124,250,.05)">
-          <div style="font-size:12px;color:var(--accent);font-weight:600">AIが稟議書を作成しました</div>
+          <div style="font-size:12px;color:var(--accent);font-weight:600" data-i18n="aiDraftReady">AIが稟議書を作成しました</div>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:14px">基本情報</div>
+          <div class="card-title" style="margin-bottom:14px" data-i18n="basicInfo">基本情報</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div class="form-group" style="margin:0"><label>承認タイプ</label>
-              <select id="sel-approval-type"><option value="confirm">確認型</option><option value="notify">通知型</option><option value="judge">判断型</option><option value="consensus">合議型</option></select>
+            <div class="form-group" style="margin:0"><label data-i18n="approvalType">承認タイプ</label>
+              <select id="sel-approval-type"><option value="confirm" data-i18n="typeConfirm">確認型</option><option value="notify" data-i18n="typeNotify">通知型</option><option value="judge" data-i18n="typeJudge">判断型</option><option value="consensus" data-i18n="typeConsensus">合議型</option></select>
             </div>
-            <div class="form-group" style="margin:0"><label>承認者</label><select id="sel-approver"></select></div>
+            <div class="form-group" style="margin:0"><label data-i18n="approver">承認者</label><select id="sel-approver"></select></div>
           </div>
-          <div style="margin-top:12px;font-size:12px;color:var(--txt2)"><span style="font-weight:500">推薦理由：</span><span id="approver-reason"></span></div>
-          <div style="margin-top:6px;font-size:12px;color:var(--txt2)">リスク：<span id="risk-badge"></span></div>
+          <div style="margin-top:12px;font-size:12px;color:var(--txt2)"><span style="font-weight:500" data-i18n="recommendReason">推薦理由：</span><span id="approver-reason"></span></div>
+          <div style="margin-top:6px;font-size:12px;color:var(--txt2)"><span data-i18n="risk">リスク：</span><span id="risk-badge"></span></div>
           <div id="key-points-area" style="margin-top:10px;display:none">
-            <div style="font-size:12px;color:var(--txt2);margin-bottom:4px;font-weight:500">確認ポイント：</div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:4px;font-weight:500" data-i18n="keyPoints">確認ポイント：</div>
             <ul id="key-points-list" style="padding-left:16px;font-size:12px;color:var(--txt2)"></ul>
           </div>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:14px">稟議書</div>
-          <div class="form-group"><label>タイトル</label><input id="draft-title" type="text"></div>
-          <div class="form-group" style="margin:0"><label>本文</label><textarea id="draft-body" rows="10"></textarea></div>
+          <div class="card-title" style="margin-bottom:14px" data-i18n="document">稟議書</div>
+          <div class="form-group"><label data-i18n="titleLabel">タイトル</label><input id="draft-title" type="text"></div>
+          <div class="form-group" style="margin:0"><label data-i18n="bodyLabel">本文</label><textarea id="draft-body" rows="10"></textarea></div>
         </div>
         <div class="card" id="code-deploy-card" style="display:none">
-          <div class="card-title" style="margin-bottom:12px">🔧 コード変更</div>
-          <label class="check-row"><input type="checkbox" id="chk-auto-deploy" checked>承認後に自動で本番反映する</label>
+          <div class="card-title" style="margin-bottom:12px" data-i18n="codeChange">コード変更</div>
+          <label class="check-row"><input type="checkbox" id="chk-auto-deploy" checked><span data-i18n="autoDeploy">承認後に自動で本番反映する</span></label>
           <div style="margin-top:12px">
-            <div class="accordion-toggle" onclick="toggleDiff()"><span id="diff-arrow">▶</span> 差分を確認する</div>
+            <div class="accordion-toggle" onclick="toggleDiff()"><span id="diff-arrow">▶</span> <span data-i18n="viewDiff">差分を確認する</span></div>
             <div class="accordion-body" id="diff-body">
-              <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">変更行数: <span id="diff-changed-lines"></span>行</div>
+              <div style="font-size:12px;color:var(--txt2);margin-bottom:6px"><span data-i18n="changedLines">変更行数</span>: <span id="diff-changed-lines"></span><span data-i18n="lines">行</span></div>
               <div class="diff-block" id="diff-block"></div>
-              <div style="margin-top:10px;font-size:12px;color:var(--txt2)"><strong>AIレポート：</strong><span id="diff-report"></span></div>
+              <div style="margin-top:10px;font-size:12px;color:var(--txt2)"><strong data-i18n="aiReport">AIレポート：</strong><span id="diff-report"></span></div>
             </div>
           </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:4px">
-          <button class="btn btn-secondary" onclick="backToStep1()">← 戻る</button>
-          <button class="btn btn-primary" onclick="doSubmit()">この内容で送信 ▶</button>
+          <button class="btn btn-secondary" onclick="backToStep1()" data-i18n="btnBack">← 戻る</button>
+          <button class="btn btn-primary" onclick="doSubmit()" data-i18n="btnSubmit">この内容で送信 ▶</button>
         </div>
       </div>
       <div id="step-done" style="display:none">
         <div class="card" style="text-align:center;padding:40px">
-          <div style="font-size:36px;margin-bottom:16px">✅</div>
-          <div style="font-size:16px;font-weight:600;margin-bottom:8px">稟議書を送信しました</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px" data-i18n="submitDone">稟議書を送信しました</div>
           <div id="done-msg" style="color:var(--txt2);font-size:13px;margin-bottom:24px"></div>
-          <button class="btn btn-secondary" onclick="showPage('history')">申請履歴を見る</button>
+          <button class="btn btn-secondary" onclick="showPage('history')" data-i18n="viewHistory">申請履歴を見る</button>
         </div>
       </div>
     </div>
     <div id="page-history" class="page">
-      <div class="page-title">📋 申請履歴</div>
+      <div class="page-title" data-i18n="navHistory">申請履歴</div>
       <div id="history-list"></div>
     </div>
     <div id="page-phase3" class="page">
-      <div class="page-title" id="phase3-title">📊 Phase 3 ダッシュボード</div>
+      <div class="page-title" id="phase3-title" data-i18n="navPhase3">Phase 3</div>
       <div class="card">
-        <div class="card-title" style="margin-bottom:14px">承認者別統計</div>
-        <table class="data-table"><thead><tr><th>承認者</th><th>平均承認時間</th><th>承認率</th><th>承認件数</th></tr></thead><tbody id="phase3-approver-tbody"></tbody></table>
+        <div class="card-title" style="margin-bottom:14px" data-i18n="approverStats">承認者別統計</div>
+        <table class="data-table"><thead><tr><th data-i18n="approverCol">承認者</th><th data-i18n="avgTime">平均承認時間</th><th data-i18n="approvalRate">承認率</th><th data-i18n="approvedCount">承認件数</th></tr></thead><tbody id="phase3-approver-tbody"></tbody></table>
       </div>
-      <div class="card"><div class="card-title" style="margin-bottom:14px">申請タイプ別 平均承認時間</div><div id="phase3-type-stats"></div></div>
-      <div class="card"><div class="card-title" style="margin-bottom:8px">🤖 自動化候補</div><div id="phase3-automation-msg" style="font-size:13px;color:var(--txt2)"></div></div>
+      <div class="card"><div class="card-title" style="margin-bottom:14px" data-i18n="typeStats">申請タイプ別 平均承認時間</div><div id="phase3-type-stats"></div></div>
+      <div class="card"><div class="card-title" style="margin-bottom:8px" data-i18n="automationTitle">自動化候補</div><div id="phase3-automation-msg" style="font-size:13px;color:var(--txt2)"></div></div>
     </div>
     <div id="page-settings" class="page">
-      <div class="page-title">⚙️ 承認者設定</div>
+      <div class="page-title" data-i18n="navSettings">承認者設定</div>
       <div id="settings-list"></div>
     </div>
     <div id="page-usermgmt" class="page">
-      <div class="page-title">👥 ユーザー管理</div>
-      <div class="card">
-        <table class="data-table"><thead><tr><th>名前</th><th>メール</th><th>役職</th><th>状態</th><th>操作</th></tr></thead><tbody id="usermgmt-tbody"></tbody></table>
+      <div class="page-title" data-i18n="navUsers">ユーザー管理</div>
+      <div class="card user-mgmt-table">
+        <table class="data-table"><thead><tr><th data-i18n="nameCol">名前</th><th data-i18n="emailCol">メール</th><th data-i18n="positionCol">役職</th><th data-i18n="statusCol">状態</th><th data-i18n="actionsCol">操作</th></tr></thead><tbody id="usermgmt-tbody"></tbody></table>
       </div>
+      <div class="user-cards" id="usermgmt-cards"></div>
     </div>
     <div id="page-positions" class="page">
-      <div class="page-title">🏷 役職管理</div>
-      <div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddPositionModal()">+ 役職を追加</button></div>
+      <div class="page-title" data-i18n="navPositions">役職管理</div>
+      <div style="margin-bottom:16px"><button class="btn btn-primary btn-sm" onclick="openAddPositionModal()" data-i18n="addPosition">+ 役職を追加</button></div>
       <div class="card">
-        <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">≡ をドラッグして並び替え可能。並び替え後に「並び順を保存」を押してください。</div>
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:12px" data-i18n="positionDragHint">≡ をドラッグして並び替え可能。並び替え後に「並び順を保存」を押してください。</div>
         <div id="positions-list"></div>
-        <div style="margin-top:12px;display:none" id="reorder-save-area"><button class="btn btn-primary btn-sm" onclick="savePositionReorder()">並び順を保存</button></div>
+        <div style="margin-top:12px;display:none" id="reorder-save-area"><button class="btn btn-primary btn-sm" onclick="savePositionReorder()" data-i18n="saveOrder">並び順を保存</button></div>
       </div>
     </div>
     <div id="page-account" class="page">
-      <div class="page-title">⚙ 設定</div>
+      <div class="page-title" data-i18n="navAccount">設定</div>
       <div class="card" style="max-width:480px">
-        <div class="card-title" style="margin-bottom:14px">🔑 パスワード変更</div>
-        <div class="form-group"><label>現在のパスワード</label><div style="position:relative"><input id="pw-current" type="password" autocomplete="current-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-current',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
-        <div class="form-group"><label>新しいパスワード</label><div style="position:relative"><input id="pw-new" type="password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-new',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
-        <div class="form-group"><label>新しいパスワード（確認）</label><div style="position:relative"><input id="pw-new2" type="password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="togglePwVis('pw-new2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:16px">👁</button></div></div>
+        <div class="card-title" style="margin-bottom:14px" data-i18n="changePassword">パスワード変更</div>
+        <div class="form-group"><label data-i18n="currentPassword">現在のパスワード</label><div style="position:relative"><input id="pw-current" type="password" autocomplete="current-password" style="padding-right:64px"><button type="button" onclick="togglePwVis('pw-current',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:12px" data-i18n="show">表示</button></div></div>
+        <div class="form-group"><label data-i18n="newPassword">新しいパスワード</label><div style="position:relative"><input id="pw-new" type="password" autocomplete="new-password" style="padding-right:64px"><button type="button" onclick="togglePwVis('pw-new',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:12px" data-i18n="show">表示</button></div></div>
+        <div class="form-group"><label data-i18n="newPasswordConfirm">新しいパスワード（確認）</label><div style="position:relative"><input id="pw-new2" type="password" autocomplete="new-password" style="padding-right:64px"><button type="button" onclick="togglePwVis('pw-new2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt2);font-size:12px" data-i18n="show">表示</button></div></div>
         <div id="pw-change-err" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></div>
-        <button class="btn btn-primary" onclick="doChangePassword()">変更する</button>
+        <button class="btn btn-primary" onclick="doChangePassword()" data-i18n="btnChange">変更する</button>
       </div>
     </div>
   </main>
@@ -260,24 +286,24 @@ select option{background:var(--sfc2)}
 <div class="modal-overlay" id="detail-modal">
   <div class="modal">
     <div class="modal-title" id="modal-title"></div>
-    <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">申請者: <span id="modal-requester"></span> &nbsp;|&nbsp; <span id="modal-type-badge"></span> &nbsp;|&nbsp; <span id="modal-ts"></span></div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:14px"><span data-i18n="requesterLabel">申請者</span>: <span id="modal-requester"></span> &nbsp;|&nbsp; <span id="modal-type-badge"></span> &nbsp;|&nbsp; <span id="modal-ts"></span></div>
     <div class="md-body" id="modal-body-md"></div>
     <div id="modal-code-section" style="display:none;margin-top:16px">
       <div class="card" style="padding:14px;background:var(--sfc2)">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">🔧 コード変更</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px" data-i18n="codeChange">コード変更</div>
         <div id="modal-auto-deploy-note" style="font-size:12px;color:var(--txt2);margin-bottom:8px"></div>
-        <div class="accordion-toggle" onclick="toggleModalDiff()"><span id="modal-diff-arrow">▶</span> 差分を確認する</div>
+        <div class="accordion-toggle" onclick="toggleModalDiff()"><span id="modal-diff-arrow">▶</span> <span data-i18n="viewDiff">差分を確認する</span></div>
         <div class="accordion-body" id="modal-diff-body">
-          <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">変更行数: <span id="modal-diff-lines"></span>行</div>
+          <div style="font-size:12px;color:var(--txt2);margin-bottom:6px"><span data-i18n="changedLines">変更行数</span>: <span id="modal-diff-lines"></span><span data-i18n="lines">行</span></div>
           <div class="diff-block" id="modal-diff-block"></div>
         </div>
       </div>
     </div>
     <div id="modal-approve-area" style="display:none;margin-top:16px">
-      <div class="form-group"><label>承認者コメント（任意）</label><textarea id="modal-comment" rows="3" placeholder="コメントがあれば記入してください"></textarea></div>
+      <div class="form-group"><label data-i18n="approverComment">承認者コメント（任意）</label><textarea id="modal-comment" rows="3" placeholder="コメントがあれば記入してください"></textarea></div>
     </div>
     <div id="modal-reject-area" style="display:none;margin-top:8px">
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">差し戻しコメント（必須）</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px" data-i18n="rejectComment">差し戻しコメント（必須）</div>
       <textarea id="modal-reject-comment" rows="3" placeholder="差し戻し理由を入力してください"></textarea>
     </div>
     <div id="modal-resolved-area" style="display:none;margin-top:12px;padding:12px;background:var(--sfc2);border-radius:6px;font-size:13px">
@@ -285,83 +311,227 @@ select option{background:var(--sfc2)}
       <div id="modal-resolved-comment" style="color:var(--txt2);margin-top:6px;font-size:12px"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
-      <button class="btn btn-danger" id="btn-reject" onclick="doReject()" style="display:none">差し戻す</button>
-      <button class="btn btn-success" id="btn-approve" onclick="doApprove()" style="display:none">承認する ✓</button>
+      <button class="btn btn-secondary" onclick="closeModal()" data-i18n="close">閉じる</button>
+      <button class="btn btn-danger" id="btn-reject" onclick="doReject()" style="display:none" data-i18n="reject">差し戻す</button>
+      <button class="btn btn-success" id="btn-approve" onclick="doApprove()" style="display:none" data-i18n="approve">承認する &#10003;</button>
     </div>
   </div>
 </div>
 <div class="modal-overlay" id="pos-modal">
   <div class="modal" style="max-width:400px">
-    <div class="modal-title" id="pos-modal-title">役職を追加</div>
-    <div class="form-group"><label>役職名</label><input id="pos-modal-name" type="text" placeholder="例: 部長"></div>
-    <div class="form-group" id="pos-modal-rank-group"><label>順位（数値が小さいほど上位、1は管理者専用）</label><input id="pos-modal-rank" type="number" min="2" placeholder="例: 2"></div>
+    <div class="modal-title" id="pos-modal-title" data-i18n="posAddTitle">役職を追加</div>
+    <div class="form-group"><label data-i18n="positionName">役職名</label><input id="pos-modal-name" type="text" placeholder="例: 部長"></div>
+    <div class="form-group" id="pos-modal-rank-group"><label data-i18n="positionRankLabel">順位（数値が小さいほど上位、1は管理者専用）</label><input id="pos-modal-rank" type="number" min="2" placeholder="例: 2"></div>
     <div id="pos-modal-err" style="color:var(--red);font-size:12px;margin-bottom:8px;display:none"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePosModal()">キャンセル</button>
-      <button class="btn btn-primary" id="pos-modal-btn" onclick="submitPosModal()">追加</button>
+      <button class="btn btn-secondary" onclick="closePosModal()" data-i18n="cancel">キャンセル</button>
+      <button class="btn btn-primary" id="pos-modal-btn" onclick="submitPosModal()" data-i18n="addBtn">追加</button>
     </div>
   </div>
 </div>
 <div class="modal-overlay" id="pw-modal">
   <div class="modal" style="max-width:400px">
-    <div class="modal-title">🔑 仮パスワード発行</div>
-    <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">以下の仮パスワードをユーザーに伝えてください。</div>
+    <div class="modal-title" data-i18n="tempPwTitle">仮パスワード発行</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:16px" data-i18n="tempPwDesc">以下の仮パスワードをユーザーに伝えてください。</div>
     <div style="display:flex;align-items:center;gap:10px;background:var(--sfc2);border:1px solid var(--bdr);border-radius:6px;padding:12px 16px">
       <code id="pw-modal-value" style="font-size:16px;font-weight:700;color:var(--accent);flex:1;letter-spacing:1px"></code>
-      <button class="btn btn-sm btn-secondary" onclick="copyTempPw()">コピー</button>
+      <button class="btn btn-sm btn-secondary" onclick="copyTempPw()" data-i18n="copy">コピー</button>
     </div>
-    <div class="modal-footer"><button class="btn btn-primary" onclick="closePwModal()">閉じる</button></div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closePwModal()" data-i18n="close">閉じる</button></div>
   </div>
 </div>
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-const API="";let _token=null,_user=null,_approvers=[],_currentDraft=null,_currentRequestId=null,_positions=[],_editingPositionId=null;
+const API="";
+let _token=null,_user=null,_approvers=[],_currentDraft=null,_currentRequestId=null,_positions=[],_editingPositionId=null,_lang="ja",_theme="dark";
+
+const I18N={
+  ja:{
+    loginSub:"稟議AIエージェント",email:"メールアドレス",password:"パスワード",login:"ログイン",
+    navInbox:"受信トレイ",navApply:"申請する",navHistory:"申請履歴",navPhase3:"Phase 3",
+    navSettings:"承認者設定",navUsers:"ユーザー管理",navPositions:"役職管理",navAccount:"設定",
+    themeDark:"ダーク",themeLight:"ライト",logout:"ログアウト",
+    step1:"内容入力",step2:"AI確認・編集",applyLabel:"申請内容を自由に書いてください",
+    btnAnalyze:"AIに分析してもらう ▶",analyzing:"AI分析中...",
+    aiDraftReady:"AIが稟議書を作成しました",basicInfo:"基本情報",
+    approvalType:"承認タイプ",approver:"承認者",
+    typeConfirm:"確認型",typeNotify:"通知型",typeJudge:"判断型",typeConsensus:"合議型",
+    recommendReason:"推薦理由：",risk:"リスク：",keyPoints:"確認ポイント：",
+    document:"稟議書",titleLabel:"タイトル",bodyLabel:"本文",
+    codeChange:"コード変更",autoDeploy:"承認後に自動で本番反映する",
+    viewDiff:"差分を確認する",changedLines:"変更行数",lines:"行",aiReport:"AIレポート：",
+    btnBack:"← 戻る",btnSubmit:"この内容で送信 ▶",
+    submitDone:"稟議書を送信しました",viewHistory:"申請履歴を見る",
+    approverStats:"承認者別統計",approverCol:"承認者",avgTime:"平均承認時間",
+    approvalRate:"承認率",approvedCount:"承認件数",
+    typeStats:"申請タイプ別 平均承認時間",automationTitle:"自動化候補",
+    nameCol:"名前",emailCol:"メール",positionCol:"役職",statusCol:"状態",actionsCol:"操作",
+    addPosition:"+ 役職を追加",positionDragHint:"≡ をドラッグして並び替え可能。並び替え後に「並び順を保存」を押してください。",
+    saveOrder:"並び順を保存",changePassword:"パスワード変更",
+    currentPassword:"現在のパスワード",newPassword:"新しいパスワード",newPasswordConfirm:"新しいパスワード（確認）",
+    show:"表示",hide:"隠す",btnChange:"変更する",
+    requesterLabel:"申請者",approverComment:"承認者コメント（任意）",rejectComment:"差し戻しコメント（必須）",
+    close:"閉じる",reject:"差し戻す",approve:"承認する ✓",
+    positionName:"役職名",positionRankLabel:"順位（数値が小さいほど上位、1は管理者専用）",
+    cancel:"キャンセル",addBtn:"追加",tempPwTitle:"仮パスワード発行",
+    tempPwDesc:"以下の仮パスワードをユーザーに伝えてください。",copy:"コピー",
+    toYou:"→ あなた",detailLink:"詳細を見る →",
+    noInbox:"承認待ちの申請はありません",noHistory:"申請履歴はまだありません",noApprovers:"承認者なし",
+    statusPending:"承認待ち",statusApproved:"承認済み",statusRejected:"差し戻し",statusWithdrawn:"取り下げ",
+    activeLabel:"有効",inactiveLabel:"無効",
+    riskLow:"低",riskMid:"中",riskHigh:"高",
+    confirmChangePos:"役職を「{name}」に変更しますか？",
+    confirmActivate:"このユーザーを有効化しますか？",confirmDeactivate:"このユーザーを無効化しますか？",
+    confirmResetPw:"仮パスワードを発行しますか？現在のパスワードは無効になります。",
+    confirmDeletePos:"この役職を削除しますか？",
+    activated:"有効化しました",deactivated:"無効化しました",
+    posUpdated:"役職を変更しました",pwCopied:"コピーしました",pwCopyFail:"コピー失敗",
+    posAdded:"役職を追加しました",posEdited:"役職を更新しました",posDeleted:"削除しました",
+    orderSaved:"並び順を保存しました",pwChanged:"パスワードを変更しました",
+    settingsSaved:"設定を保存しました",
+    submitSent:"{name}さんに稟議書を送信しました",
+    approvedMsg:"承認しました",rejectedMsg:"差し戻しました",
+    pwMismatch:"新しいパスワードが一致しません",pwTooShort:"8文字以上で入力してください",
+    enterRejectComment:"差し戻しコメントを入力してください",
+    applyEnterContent:"申請内容を入力してください",
+    analyzeError:"分析エラー: ",submitError:"送信エラー: ",
+    editPos:"編集",deletePos:"削除",enableUser:"有効化",disableUser:"無効化",resetPw:"PW再発行",
+    posEditTitle:"役職を編集",posAddTitle:"役職を追加",
+    posRankErr:"順位は2以上を入力してください（1は管理者専用）",posNameErr:"役職名を入力してください",
+    adminOnly:"管理者専用ページです",
+    autoDeployOn:"承認後: 自動で本番反映",autoDeployOff:"承認後: 手動反映",
+    noTitle:"(タイトルなし)",commentLabel:"コメント: ",
+    dashboardAll:"全社ダッシュボード",dashboardTeam:"チームダッシュボード（自分 + 下位役職）",dashboardSelf:"自分のダッシュボード",
+    noData:"データなし",automationMsg:"確認型かつ承認済みの申請が{n}件あります。将来的な自動承認の検討を推奨します。",
+    automationNone:"現時点で自動化候補はありません。",
+    autoRoutingLabel:"自動ルーティングする申請タイプ：",memoLabel:"メモ",saveBtn:"保存",
+    codeDeploy:"コード変更（code_deploy）",judgeType:"判断型",consensusType:"合議型",notifyType:"通知型",
+    defaultTag:"既定",rankSuffix:"位"
+  },
+  en:{
+    loginSub:"AI Approval Agent",email:"Email",password:"Password",login:"Login",
+    navInbox:"Inbox",navApply:"Apply",navHistory:"History",navPhase3:"Phase 3",
+    navSettings:"Approver Settings",navUsers:"User Management",navPositions:"Positions",navAccount:"Settings",
+    themeDark:"Dark",themeLight:"Light",logout:"Logout",
+    step1:"Enter Request",step2:"Review & Edit",applyLabel:"Describe your request freely",
+    btnAnalyze:"Analyze with AI ▶",analyzing:"Analyzing...",
+    aiDraftReady:"AI has created your approval document",basicInfo:"Basic Info",
+    approvalType:"Approval Type",approver:"Approver",
+    typeConfirm:"Confirm",typeNotify:"Notify",typeJudge:"Judge",typeConsensus:"Consensus",
+    recommendReason:"Reason: ",risk:"Risk: ",keyPoints:"Key Points: ",
+    document:"Approval Document",titleLabel:"Title",bodyLabel:"Body",
+    codeChange:"Code Change",autoDeploy:"Auto-deploy to production after approval",
+    viewDiff:"View Diff",changedLines:"Changed lines",lines:"",aiReport:"AI Report: ",
+    btnBack:"← Back",btnSubmit:"Submit ▶",
+    submitDone:"Approval document submitted",viewHistory:"View History",
+    approverStats:"Approver Statistics",approverCol:"Approver",avgTime:"Avg. Time",
+    approvalRate:"Approval Rate",approvedCount:"Approved",
+    typeStats:"Avg. Approval Time by Type",automationTitle:"Automation Candidates",
+    nameCol:"Name",emailCol:"Email",positionCol:"Position",statusCol:"Status",actionsCol:"Actions",
+    addPosition:"+ Add Position",positionDragHint:"Drag ≡ to reorder. Press \"Save Order\" after reordering.",
+    saveOrder:"Save Order",changePassword:"Change Password",
+    currentPassword:"Current Password",newPassword:"New Password",newPasswordConfirm:"Confirm New Password",
+    show:"Show",hide:"Hide",btnChange:"Change",
+    requesterLabel:"Requester",approverComment:"Approver Comment (optional)",rejectComment:"Rejection Reason (required)",
+    close:"Close",reject:"Reject",approve:"Approve ✓",
+    positionName:"Position Name",positionRankLabel:"Rank (lower number = higher rank; 1 is admin only)",
+    cancel:"Cancel",addBtn:"Add",tempPwTitle:"Temporary Password",
+    tempPwDesc:"Share this temporary password with the user.",copy:"Copy",
+    toYou:"→ You",detailLink:"View details →",
+    noInbox:"No pending approvals",noHistory:"No history yet",noApprovers:"No approvers",
+    statusPending:"Pending",statusApproved:"Approved",statusRejected:"Rejected",statusWithdrawn:"Withdrawn",
+    activeLabel:"Active",inactiveLabel:"Inactive",
+    riskLow:"Low",riskMid:"Mid",riskHigh:"High",
+    confirmChangePos:"Change position to \"{name}\"?",
+    confirmActivate:"Activate this user?",confirmDeactivate:"Deactivate this user?",
+    confirmResetPw:"Issue a temporary password? The current password will be invalidated.",
+    confirmDeletePos:"Delete this position?",
+    activated:"User activated",deactivated:"User deactivated",
+    posUpdated:"Position changed",pwCopied:"Copied",pwCopyFail:"Copy failed",
+    posAdded:"Position added",posEdited:"Position updated",posDeleted:"Deleted",
+    orderSaved:"Order saved",pwChanged:"Password changed",
+    settingsSaved:"Settings saved",
+    submitSent:"Approval document sent to {name}",
+    approvedMsg:"Approved",rejectedMsg:"Rejected",
+    pwMismatch:"New passwords do not match",pwTooShort:"Must be at least 8 characters",
+    enterRejectComment:"Please enter a rejection reason",
+    applyEnterContent:"Please enter your request",
+    analyzeError:"Analysis error: ",submitError:"Submit error: ",
+    editPos:"Edit",deletePos:"Delete",enableUser:"Enable",disableUser:"Disable",resetPw:"Reset PW",
+    posEditTitle:"Edit Position",posAddTitle:"Add Position",
+    posRankErr:"Rank must be 2 or higher (1 is admin only)",posNameErr:"Please enter a position name",
+    adminOnly:"Admin-only page",
+    autoDeployOn:"After approval: Auto-deploy",autoDeployOff:"After approval: Manual deploy",
+    noTitle:"(No title)",commentLabel:"Comment: ",
+    dashboardAll:"Company Dashboard",dashboardTeam:"Team Dashboard (self + subordinates)",dashboardSelf:"My Dashboard",
+    noData:"No data",automationMsg:"{n} approved confirm-type requests found. Consider automated approval.",
+    automationNone:"No automation candidates at this time.",
+    autoRoutingLabel:"Auto-route approval types:",memoLabel:"Memo",saveBtn:"Save",
+    codeDeploy:"Code change (code_deploy)",judgeType:"Judge",consensusType:"Consensus",notifyType:"Notify",
+    defaultTag:"Default",rankSuffix:""
+  }
+};
+
+function _t(k){return(I18N[_lang]&&I18N[_lang][k]!=null?I18N[_lang][k]:I18N.ja[k])||k}
+function applyI18n(){document.querySelectorAll("[data-i18n]").forEach(el=>{const v=_t(el.getAttribute("data-i18n"));if(v)el.textContent=v})}
+function setTheme(t){_theme=t;document.documentElement.classList.toggle("theme-light",t==="light");localStorage.setItem("theme",t);document.getElementById("btn-theme-dark").classList.toggle("active",t==="dark");document.getElementById("btn-theme-light").classList.toggle("active",t==="light")}
+function setLang(l){_lang=l;document.documentElement.setAttribute("lang",l);localStorage.setItem("lang",l);document.getElementById("btn-lang-ja").classList.toggle("active",l==="ja");document.getElementById("btn-lang-en").classList.toggle("active",l==="en");applyI18n()}
+
+(function initPrefs(){const t=localStorage.getItem("theme")||"dark",l=localStorage.getItem("lang")||"ja";_theme=t;_lang=l;document.documentElement.classList.toggle("theme-light",t==="light");document.documentElement.setAttribute("lang",l)})();
+
 async function api(method,path,body){const opts={method,headers:{"Content-Type":"application/json"}};if(_token)opts.headers["Authorization"]="Bearer "+_token;if(body)opts.body=JSON.stringify(body);const r=await fetch(API+path,opts);if(!r.ok){const e=await r.json().catch(()=>({detail:r.statusText}));throw new Error(e.detail||r.statusText)}return r.json()}
-async function doLogin(){const email=document.getElementById("login-email").value.trim(),pw=document.getElementById("login-password").value,err=document.getElementById("login-err");err.style.display="none";try{const res=await api("POST","/api/login",{email,password:pw});_token=res.token;_user=res.user;document.getElementById("login-page").style.display="none";document.getElementById("app").style.display="flex";setupNav();_approvers=await api("GET","/api/approvers");if(_user.can_approve)showPage("inbox");else showPage("apply")}catch(e){err.textContent=e.message;err.style.display="block"}}
+async function doLogin(){const email=document.getElementById("login-email").value.trim(),pw=document.getElementById("login-password").value,err=document.getElementById("login-err");err.style.display="none";try{const res=await api("POST","/api/login",{email,password:pw});_token=res.token;_user=res.user;document.getElementById("login-page").style.display="none";document.getElementById("app").style.display="flex";setupNav();setTheme(_theme);setLang(_lang);_approvers=await api("GET","/api/approvers");if(_user.can_approve)showPage("inbox");else showPage("apply")}catch(e){err.textContent=e.message;err.style.display="block"}}
 async function doLogout(){await api("POST","/api/logout").catch(()=>{});_token=null;_user=null;_positions=[];_approvers=[];const app=document.getElementById("app");app.classList.remove("sidebar-collapsed","sidebar-open");document.getElementById("sidebar-toggle").textContent="☰";app.style.display="none";document.getElementById("login-page").style.display="flex"}
 document.getElementById("login-password").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
 function toggleSidebar(){const isMobile=window.innerWidth<=768,app=document.getElementById("app"),btn=document.getElementById("sidebar-toggle");if(isMobile){const isOpen=app.classList.contains("sidebar-open");if(isOpen){app.classList.remove("sidebar-open");btn.textContent="☰"}else{app.classList.add("sidebar-open");btn.textContent="✕"}}else{const col=app.classList.toggle("sidebar-collapsed");btn.textContent=col?"☰":"✕"}}
 function closeSidebar(){document.getElementById("app").classList.remove("sidebar-open");document.getElementById("sidebar-toggle").textContent="☰"}
 function setupNav(){document.getElementById("sidebar-name").textContent=_user.name;document.getElementById("sidebar-role").textContent=_user.position_name||_user.role;if(_user.can_approve)document.getElementById("nav-inbox").style.display="flex";document.getElementById("nav-phase3").style.display="flex";if(_user.position_rank===1){document.getElementById("nav-settings").style.display="flex";document.getElementById("nav-usermgmt").style.display="flex";document.getElementById("nav-positions").style.display="flex"}document.getElementById("nav-account").style.display="flex";if(window.innerWidth>768)document.getElementById("sidebar-toggle").textContent="✕"}
-function showPage(name){const adminOnly=["usermgmt","positions","settings"];if(adminOnly.includes(name)&&_user?.position_rank!==1){toast("管理者専用ページです","error");return}document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));document.getElementById("page-"+name)?.classList.add("active");document.getElementById("nav-"+name)?.classList.add("active");({inbox:loadInbox,history:loadHistory,phase3:loadPhase3,settings:loadSettings,apply:resetApply,usermgmt:loadUserMgmt,positions:loadPositions,account:loadAccount})[name]?.()}
+function showPage(name){const adminOnly=["usermgmt","positions","settings"];if(adminOnly.includes(name)&&_user?.position_rank!==1){toast(_t("adminOnly"),"error");return}document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));document.getElementById("page-"+name)?.classList.add("active");document.getElementById("nav-"+name)?.classList.add("active");if(window.innerWidth<=768)closeSidebar();({inbox:loadInbox,history:loadHistory,phase3:loadPhase3,settings:loadSettings,apply:resetApply,usermgmt:loadUserMgmt,positions:loadPositions,account:loadAccount})[name]?.()}
 function resetApply(){document.getElementById("step1").style.display="block";document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="none";document.getElementById("raw-input").value="";setStepIndicator(1)}
 function setStepIndicator(n){const s1=document.getElementById("step-ind-1"),s2=document.getElementById("step-ind-2");if(n===1){s1.className="step active";s2.className="step"}else{s1.className="step done";s2.className="step active"}}
-async function doAnalyze(){const raw=document.getElementById("raw-input").value.trim();if(!raw){toast("申請内容を入力してください","error");return}const btn=document.getElementById("btn-analyze");btn.disabled=true;btn.querySelector("span").textContent="AI分析中...";try{const d=await api("POST","/api/requests/analyze",{raw_input:raw});_currentDraft={...d,raw_input:raw};fillStep2(d);document.getElementById("step1").style.display="none";document.getElementById("step2").style.display="block";setStepIndicator(2)}catch(e){toast("分析エラー: "+e.message,"error")}finally{btn.disabled=false;btn.querySelector("span").textContent="AIに分析してもらう ▶"}}
-function fillStep2(d){document.getElementById("sel-approval-type").value=d.approval_type;const sel=document.getElementById("sel-approver");sel.innerHTML=_approvers.map(a=>`<option value="${a.id}" data-name="${a.name}">${a.name}（${escHtml(a.role)}）</option>`).join("");sel.value=d.suggested_approver_id;document.getElementById("approver-reason").textContent=d.suggested_approver_reason||"—";const rm={low:"低",medium:"中",high:"高"},rc={low:"badge-risk-low",medium:"badge-risk-medium",high:"badge-risk-high"};document.getElementById("risk-badge").innerHTML=`<span class="badge ${rc[d.risk_level]}">${rm[d.risk_level]||d.risk_level}</span>`;const kpA=document.getElementById("key-points-area"),kpL=document.getElementById("key-points-list");if(d.key_points&&d.key_points.length){kpL.innerHTML=d.key_points.map(k=>`<li>${escHtml(k)}</li>`).join("");kpA.style.display="block"}else kpA.style.display="none";document.getElementById("draft-title").value=d.draft_title||"";document.getElementById("draft-body").value=d.draft_body||"";const cc=document.getElementById("code-deploy-card");if(d.extension_type==="code_deploy"&&d.extension_data&&!d.extension_data.error){cc.style.display="block";document.getElementById("diff-changed-lines").textContent=d.extension_data.changed_lines||0;renderDiff(d.extension_data.original_code,d.extension_data.new_code,"diff-block");document.getElementById("diff-report").textContent=(d.extension_data.diff_summary||"").replace(/<[^>]+>/g,"").substring(0,200)}else cc.style.display="none"}
+async function doAnalyze(){const raw=document.getElementById("raw-input").value.trim();if(!raw){toast(_t("applyEnterContent"),"error");return}const btn=document.getElementById("btn-analyze");btn.disabled=true;btn.querySelector("span").textContent=_t("analyzing");try{const d=await api("POST","/api/requests/analyze",{raw_input:raw});_currentDraft={...d,raw_input:raw};fillStep2(d);document.getElementById("step1").style.display="none";document.getElementById("step2").style.display="block";setStepIndicator(2)}catch(e){toast(_t("analyzeError")+e.message,"error")}finally{btn.disabled=false;btn.querySelector("span").textContent=_t("btnAnalyze")}}
+function fillStep2(d){document.getElementById("sel-approval-type").value=d.approval_type;const sel=document.getElementById("sel-approver");sel.innerHTML=_approvers.map(a=>`<option value="${a.id}" data-name="${a.name}">${a.name}（${escHtml(a.role)}）</option>`).join("");sel.value=d.suggested_approver_id;document.getElementById("approver-reason").textContent=d.suggested_approver_reason||"—";const rm={low:_t("riskLow"),medium:_t("riskMid"),high:_t("riskHigh")},rc={low:"badge-risk-low",medium:"badge-risk-medium",high:"badge-risk-high"};document.getElementById("risk-badge").innerHTML=`<span class="badge ${rc[d.risk_level]}">${rm[d.risk_level]||d.risk_level}</span>`;const kpA=document.getElementById("key-points-area"),kpL=document.getElementById("key-points-list");if(d.key_points&&d.key_points.length){kpL.innerHTML=d.key_points.map(k=>`<li>${escHtml(k)}</li>`).join("");kpA.style.display="block"}else kpA.style.display="none";document.getElementById("draft-title").value=d.draft_title||"";document.getElementById("draft-body").value=d.draft_body||"";const cc=document.getElementById("code-deploy-card");if(d.extension_type==="code_deploy"&&d.extension_data&&!d.extension_data.error){cc.style.display="block";document.getElementById("diff-changed-lines").textContent=d.extension_data.changed_lines||0;renderDiff(d.extension_data.original_code,d.extension_data.new_code,"diff-block");document.getElementById("diff-report").textContent=(d.extension_data.diff_summary||"").replace(/<[^>]+>/g,"").substring(0,200)}else cc.style.display="none"}
 function backToStep1(){document.getElementById("step2").style.display="none";document.getElementById("step1").style.display="block";setStepIndicator(1)}
-async function doSubmit(){const sa=document.getElementById("sel-approver"),an=sa.options[sa.selectedIndex]?.dataset.name||"",payload={raw_input:_currentDraft.raw_input,approval_type:document.getElementById("sel-approval-type").value,draft_title:document.getElementById("draft-title").value,draft_body:document.getElementById("draft-body").value,approver_id:parseInt(sa.value),approver_name:an,extension_type:_currentDraft.extension_type||null,extension_data:_currentDraft.extension_data||null,auto_deploy:document.getElementById("chk-auto-deploy")?.checked??true};try{const r=await api("POST","/api/requests/submit",payload);document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="block";document.getElementById("done-msg").textContent=`${r.approver_name} さんに稟議書を送信しました`}catch(e){toast("送信エラー: "+e.message,"error")}}
+async function doSubmit(){const sa=document.getElementById("sel-approver"),an=sa.options[sa.selectedIndex]?.dataset.name||"",payload={raw_input:_currentDraft.raw_input,approval_type:document.getElementById("sel-approval-type").value,draft_title:document.getElementById("draft-title").value,draft_body:document.getElementById("draft-body").value,approver_id:parseInt(sa.value),approver_name:an,extension_type:_currentDraft.extension_type||null,extension_data:_currentDraft.extension_data||null,auto_deploy:document.getElementById("chk-auto-deploy")?.checked??true};try{const r=await api("POST","/api/requests/submit",payload);document.getElementById("step2").style.display="none";document.getElementById("step-done").style.display="block";document.getElementById("done-msg").textContent=_t("submitSent").replace("{name}",r.approver_name)}catch(e){toast(_t("submitError")+e.message,"error")}}
 function toggleDiff(){const b=document.getElementById("diff-body"),a=document.getElementById("diff-arrow");b.classList.toggle("open");a.textContent=b.classList.contains("open")?"▼":"▶"}
-async function loadInbox(){try{const list=await api("GET","/api/requests/inbox"),el=document.getElementById("inbox-list");if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>承認待ちの申請はありません</div>`;return}el.innerHTML=list.map(r=>`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.requester_name)}</span><span>→ あなた</span>${typeBadge(r.approval_type)}${r.extension_type==="code_deploy"?`<span style="color:var(--orange);font-size:11px">🔧 コード変更あり</span>`:""}<span>${relTime(r.ts)}</span></div><div class="card-footer"><span></span><span style="font-size:12px;color:var(--accent)">詳細を見る →</span></div></div>`).join("")}catch(e){toast(e.message,"error")}}
-async function loadHistory(){try{const list=await api("GET","/api/requests/mine"),el=document.getElementById("history-list");if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div>申請履歴はまだありません</div>`;return}el.innerHTML=list.map(r=>{const si={pending:"⏳",approved:"✅",rejected:"❌",withdrawn:"🚫"}[r.status]||"❓";return`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.approver_name||"—")}</span><span class="badge badge-${r.status}">${si} ${statusLabel(r.status)}</span><span>${fmtDate(r.ts)}</span></div>${r.approver_comment?`<div style="margin-top:6px;font-size:12px;color:var(--txt2)">コメント: ${escHtml(r.approver_comment)}</div>`:""}</div>`}).join("")}catch(e){toast(e.message,"error")}}
-async function openDetail(id){_currentRequestId=id;try{const r=await api("GET",`/api/requests/${id}`);document.getElementById("modal-title").textContent=r.draft_title||"(タイトルなし)";document.getElementById("modal-requester").textContent=r.requester_name;document.getElementById("modal-type-badge").innerHTML=typeBadge(r.approval_type);document.getElementById("modal-ts").textContent=fmtDate(r.ts);document.getElementById("modal-body-md").innerHTML=renderMarkdown(r.draft_body||"");const cs=document.getElementById("modal-code-section");if(r.extension_type==="code_deploy"&&r.extension_data){const ext=typeof r.extension_data==="string"?JSON.parse(r.extension_data):r.extension_data;if(!ext.error){cs.style.display="block";document.getElementById("modal-auto-deploy-note").textContent=ext.auto_deploy?"承認後: 自動で本番反映":"承認後: 手動反映";document.getElementById("modal-diff-lines").textContent=ext.changed_lines||0;renderDiff(ext.original_code,ext.new_code,"modal-diff-block")}else cs.style.display="none"}else cs.style.display="none";const ca=_user.can_approve&&r.approver_id===_user.id&&r.status==="pending";["modal-approve-area","modal-reject-area"].forEach(id=>document.getElementById(id).style.display=ca?"block":"none");["btn-approve","btn-reject"].forEach(id=>document.getElementById(id).style.display=ca?"inline-flex":"none");document.getElementById("modal-comment").value="";document.getElementById("modal-reject-comment").value="";const ra=document.getElementById("modal-resolved-area");if(r.status!=="pending"){ra.style.display="block";const si={approved:"✅",rejected:"❌",withdrawn:"🚫"}[r.status]||"";document.getElementById("modal-resolved-badge").innerHTML=`<span class="badge badge-${r.status}">${si} ${statusLabel(r.status)}</span>`;document.getElementById("modal-resolved-comment").textContent=r.approver_comment?`コメント: ${r.approver_comment}`:""}else ra.style.display="none";document.getElementById("detail-modal").classList.add("open")}catch(e){toast(e.message,"error")}}
+async function loadInbox(){try{const list=await api("GET","/api/requests/inbox"),el=document.getElementById("inbox-list");if(!list.length){el.innerHTML=`<div class="empty">${_t("noInbox")}</div>`;return}el.innerHTML=list.map(r=>`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.requester_name)}</span><span>${_t("toYou")}</span>${typeBadge(r.approval_type)}${r.extension_type==="code_deploy"?`<span style="color:var(--orange);font-size:11px">[${_t("codeChange")}]</span>`:""}<span>${relTime(r.ts)}</span></div><div class="card-footer"><span></span><span style="font-size:12px;color:var(--accent)">${_t("detailLink")}</span></div></div>`).join("")}catch(e){toast(e.message,"error")}}
+async function loadHistory(){try{const list=await api("GET","/api/requests/mine"),el=document.getElementById("history-list");if(!list.length){el.innerHTML=`<div class="empty">${_t("noHistory")}</div>`;return}el.innerHTML=list.map(r=>`<div class="card-sm" onclick="openDetail(${r.id})"><div class="card-title">${escHtml(r.draft_title||r.raw_input.substring(0,40))}</div><div class="card-meta"><span>${escHtml(r.approver_name||"—")}</span><span class="badge badge-${r.status}">${statusLabel(r.status)}</span><span>${fmtDate(r.ts)}</span></div>${r.approver_comment?`<div style="margin-top:6px;font-size:12px;color:var(--txt2)">${_t("commentLabel")}${escHtml(r.approver_comment)}</div>`:""}</div>`).join("")}catch(e){toast(e.message,"error")}}
+async function openDetail(id){_currentRequestId=id;try{const r=await api("GET",`/api/requests/${id}`);document.getElementById("modal-title").textContent=r.draft_title||_t("noTitle");document.getElementById("modal-requester").textContent=r.requester_name;document.getElementById("modal-type-badge").innerHTML=typeBadge(r.approval_type);document.getElementById("modal-ts").textContent=fmtDate(r.ts);document.getElementById("modal-body-md").innerHTML=renderMarkdown(r.draft_body||"");const cs=document.getElementById("modal-code-section");if(r.extension_type==="code_deploy"&&r.extension_data){const ext=typeof r.extension_data==="string"?JSON.parse(r.extension_data):r.extension_data;if(!ext.error){cs.style.display="block";document.getElementById("modal-auto-deploy-note").textContent=ext.auto_deploy?_t("autoDeployOn"):_t("autoDeployOff");document.getElementById("modal-diff-lines").textContent=ext.changed_lines||0;renderDiff(ext.original_code,ext.new_code,"modal-diff-block")}else cs.style.display="none"}else cs.style.display="none";const ca=_user.can_approve&&r.approver_id===_user.id&&r.status==="pending";["modal-approve-area","modal-reject-area"].forEach(id=>document.getElementById(id).style.display=ca?"block":"none");["btn-approve","btn-reject"].forEach(id=>document.getElementById(id).style.display=ca?"inline-flex":"none");document.getElementById("modal-comment").value="";document.getElementById("modal-reject-comment").value="";const ra=document.getElementById("modal-resolved-area");if(r.status!=="pending"){ra.style.display="block";document.getElementById("modal-resolved-badge").innerHTML=`<span class="badge badge-${r.status}">${statusLabel(r.status)}</span>`;document.getElementById("modal-resolved-comment").textContent=r.approver_comment?`${_t("commentLabel")}${r.approver_comment}`:""}else ra.style.display="none";document.getElementById("detail-modal").classList.add("open")}catch(e){toast(e.message,"error")}}
 function closeModal(){document.getElementById("detail-modal").classList.remove("open");document.getElementById("modal-diff-body").classList.remove("open");document.getElementById("modal-diff-arrow").textContent="▶"}
-async function doApprove(){const c=document.getElementById("modal-comment").value;try{await api("POST",`/api/requests/${_currentRequestId}/approve`,{comment:c||null});toast("承認しました","success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
-async function doReject(){const c=document.getElementById("modal-reject-comment").value.trim();if(!c){toast("差し戻しコメントを入力してください","error");return}try{await api("POST",`/api/requests/${_currentRequestId}/reject`,{comment:c});toast("差し戻しました","success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
+async function doApprove(){const c=document.getElementById("modal-comment").value;try{await api("POST",`/api/requests/${_currentRequestId}/approve`,{comment:c||null});toast(_t("approvedMsg"),"success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
+async function doReject(){const c=document.getElementById("modal-reject-comment").value.trim();if(!c){toast(_t("enterRejectComment"),"error");return}try{await api("POST",`/api/requests/${_currentRequestId}/reject`,{comment:c});toast(_t("rejectedMsg"),"success");closeModal();loadInbox()}catch(e){toast(e.message,"error")}}
 function toggleModalDiff(){const b=document.getElementById("modal-diff-body"),a=document.getElementById("modal-diff-arrow");b.classList.toggle("open");a.textContent=b.classList.contains("open")?"▼":"▶"}
 document.getElementById("detail-modal").addEventListener("click",function(e){if(e.target===this)closeModal()});
 document.getElementById("pw-modal").addEventListener("click",function(e){if(e.target===this)closePwModal()});
 document.getElementById("pos-modal").addEventListener("click",function(e){if(e.target===this)closePosModal()});
-function renderPhase3Stats(d){document.getElementById("phase3-approver-tbody").innerHTML=d.by_approver.map(a=>`<tr><td>${escHtml(a.approver_name)}</td><td>${a.avg_hours}h</td><td>${a.approval_rate}%</td><td>${a.approved}件 / ${a.total}件</td></tr>`).join("")||`<tr><td colspan="4" style="color:var(--txt2);text-align:center">データなし</td></tr>`;const tl={confirm:"確認型",notify:"通知型",judge:"判断型",consensus:"合議型"},te=document.getElementById("phase3-type-stats"),en=Object.entries(d.by_type||{});te.innerHTML=en.length?en.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>${tl[k]||k}</span><span style="color:var(--accent);font-weight:600">平均 ${v}h</span></div>`).join(""):`<div style="color:var(--txt2);font-size:13px">データなし</div>`;document.getElementById("phase3-automation-msg").textContent=d.automation_candidates>0?`確認型かつ承認済みの申請が${d.automation_candidates}件あります。将来的な自動承認の検討を推奨します。`:"現時点で自動化候補はありません。"}
-async function loadPhase3(){try{const r=_user.position_rank;document.getElementById("phase3-title").textContent=r===1?"📊 全社ダッシュボード":r===2?"📊 チームダッシュボード（自分 + 下位役職）":"📊 自分のダッシュボード";const d=await api("GET","/api/phase3/stats");renderPhase3Stats(d)}catch(e){toast(e.message,"error")}}
-async function loadUserMgmt(){try{const[users,positions]=await Promise.all([api("GET","/api/admin/users"),api("GET","/api/admin/positions")]);_positions=positions;const tb=document.getElementById("usermgmt-tbody");tb.innerHTML=users.map(u=>`<tr><td>${escHtml(u.name)}</td><td style="font-size:12px;color:var(--txt2)">${escHtml(u.email)}</td><td><select data-prev="${u.position_id}" onchange="changeUserPosition(${u.id},parseInt(this.value),this)" style="width:auto;min-width:120px">${positions.map(p=>`<option value="${p.id}" ${u.position_id===p.id?"selected":""}>${escHtml(p.name)}</option>`).join("")}</select></td><td><span class="badge ${u.active?"badge-approved":"badge-rejected"}">${u.active?"有効":"無効"}</span></td><td style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px"><button class="btn btn-sm ${u.active?"btn-danger":"btn-success"}" onclick="toggleUserActive(${u.id},${!u.active},this)">${u.active?"無効化":"有効化"}</button><button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${u.id})">PW再発行</button></td></tr>`).join("")}catch(e){toast(e.message,"error")}}
-async function changeUserPosition(uid,pid,sel){const prev=sel.dataset.prev;const posName=sel.options[sel.selectedIndex].text;if(!confirm(`役職を「${posName}」に変更しますか？`)){sel.value=prev;return}try{await api("PUT",`/api/admin/users/${uid}/position`,{position_id:pid});sel.dataset.prev=String(pid);toast("役職を変更しました","success")}catch(e){sel.value=prev;toast(e.message,"error")}}
-async function toggleUserActive(uid,active,btn){if(!confirm(active?"このユーザーを有効化しますか？":"このユーザーを無効化しますか？"))return;try{await api("PUT",`/api/admin/users/${uid}/active`,{active});toast(active?"有効化しました":"無効化しました","success");loadUserMgmt()}catch(e){toast(e.message,"error")}}
-async function resetUserPassword(uid){if(!confirm("仮パスワードを発行しますか？現在のパスワードは無効になります。"))return;try{const r=await api("POST",`/api/admin/users/${uid}/reset_password`);document.getElementById("pw-modal-value").textContent=r.temp_password;document.getElementById("pw-modal").classList.add("open")}catch(e){toast(e.message,"error")}}
+function renderPhase3Stats(d){document.getElementById("phase3-approver-tbody").innerHTML=d.by_approver.map(a=>`<tr><td>${escHtml(a.approver_name)}</td><td>${a.avg_hours}h</td><td>${a.approval_rate}%</td><td>${a.approved}件 / ${a.total}件</td></tr>`).join("")||`<tr><td colspan="4" style="color:var(--txt2);text-align:center">${_t("noData")}</td></tr>`;const tl={confirm:_t("typeConfirm"),notify:_t("typeNotify"),judge:_t("typeJudge"),consensus:_t("typeConsensus")},te=document.getElementById("phase3-type-stats"),en=Object.entries(d.by_type||{});te.innerHTML=en.length?en.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px"><span>${tl[k]||k}</span><span style="color:var(--accent);font-weight:600">${v}h</span></div>`).join(""):`<div style="color:var(--txt2);font-size:13px">${_t("noData")}</div>`;document.getElementById("phase3-automation-msg").textContent=d.automation_candidates>0?_t("automationMsg").replace("{n}",d.automation_candidates):_t("automationNone")}
+async function loadPhase3(){try{const r=_user.position_rank;document.getElementById("phase3-title").textContent=r===1?_t("dashboardAll"):r===2?_t("dashboardTeam"):_t("dashboardSelf");const d=await api("GET","/api/phase3/stats");renderPhase3Stats(d)}catch(e){toast(e.message,"error")}}
+async function loadUserMgmt(){try{const[users,positions]=await Promise.all([api("GET","/api/admin/users"),api("GET","/api/admin/positions")]);_positions=positions;
+const posOpts=positions.map(p=>`<option value="${p.id}">${escHtml(p.name)}</option>`).join("");
+const tb=document.getElementById("usermgmt-tbody");
+tb.innerHTML=users.map(u=>`<tr><td>${escHtml(u.name)}</td><td style="font-size:12px;color:var(--txt2)">${escHtml(u.email)}</td><td><select data-prev="${u.position_id}" onchange="changeUserPosition(${u.id},parseInt(this.value),this)" style="width:auto;min-width:120px">${positions.map(p=>`<option value="${p.id}" ${u.position_id===p.id?"selected":""}>${escHtml(p.name)}</option>`).join("")}</select></td><td><span class="badge ${u.active?"badge-approved":"badge-rejected"}">${u.active?_t("activeLabel"):_t("inactiveLabel")}</span></td><td style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px"><button class="btn btn-sm ${u.active?"btn-danger":"btn-success"}" onclick="toggleUserActive(${u.id},${!u.active},this)">${u.active?_t("disableUser"):_t("enableUser")}</button><button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${u.id})">${_t("resetPw")}</button></td></tr>`).join("");
+const cards=document.getElementById("usermgmt-cards");
+cards.innerHTML=users.map(u=>`<div class="user-card"><div class="user-card-name">${escHtml(u.name)}</div><div class="user-card-email">${escHtml(u.email)}</div><div class="user-card-row"><select data-prev="${u.position_id}" onchange="changeUserPosition(${u.id},parseInt(this.value),this)" style="flex:1">${positions.map(p=>`<option value="${p.id}" ${u.position_id===p.id?"selected":""}>${escHtml(p.name)}</option>`).join("")}</select><span class="badge ${u.active?"badge-approved":"badge-rejected"}">${u.active?_t("activeLabel"):_t("inactiveLabel")}</span></div><div class="user-card-actions"><button class="btn btn-sm ${u.active?"btn-danger":"btn-success"}" onclick="toggleUserActive(${u.id},${!u.active},this)">${u.active?_t("disableUser"):_t("enableUser")}</button><button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${u.id})">${_t("resetPw")}</button></div></div>`).join("")
+}catch(e){toast(e.message,"error")}}
+async function changeUserPosition(uid,pid,sel){const prev=sel.dataset.prev,posName=sel.options[sel.selectedIndex].text;if(!confirm(_t("confirmChangePos").replace("{name}",posName))){sel.value=prev;return}try{await api("PUT",`/api/admin/users/${uid}/position`,{position_id:pid});sel.dataset.prev=String(pid);toast(_t("posUpdated"),"success")}catch(e){sel.value=prev;toast(e.message,"error")}}
+async function toggleUserActive(uid,active,btn){if(!confirm(active?_t("confirmActivate"):_t("confirmDeactivate")))return;try{await api("PUT",`/api/admin/users/${uid}/active`,{active});toast(active?_t("activated"):_t("deactivated"),"success");loadUserMgmt()}catch(e){toast(e.message,"error")}}
+async function resetUserPassword(uid){if(!confirm(_t("confirmResetPw")))return;try{const r=await api("POST",`/api/admin/users/${uid}/reset_password`);document.getElementById("pw-modal-value").textContent=r.temp_password;document.getElementById("pw-modal").classList.add("open")}catch(e){toast(e.message,"error")}}
 function closePwModal(){document.getElementById("pw-modal").classList.remove("open")}
-function copyTempPw(){const v=document.getElementById("pw-modal-value").textContent;navigator.clipboard.writeText(v).then(()=>toast("コピーしました","success")).catch(()=>toast("コピー失敗","error"))}
-async function loadPositions(){try{const positions=await api("GET","/api/admin/positions");_positions=positions;const list=document.getElementById("positions-list");document.getElementById("reorder-save-area").style.display="none";list.innerHTML=positions.map(p=>`<div class="positions-row${p.is_system?" no-drag":""}" data-id="${p.id}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">${p.is_system?'<span style="width:30px;display:inline-block"></span>':'<span class="drag-handle" style="cursor:grab;color:var(--txt2);font-size:18px;padding:0 6px;user-select:none">≡</span>'}<span style="font-size:12px;color:var(--txt2);min-width:32px">${p.rank}位</span><span style="flex:1;font-weight:600">${escHtml(p.name)}</span>${p.is_system?'<span style="font-size:11px;color:var(--txt2);padding:2px 6px;background:var(--sfc2);border-radius:4px">既定</span>':""}<button class="btn btn-sm btn-secondary" onclick="openEditPositionModal(${p.id})"${p.is_system?" disabled":""}>編集</button><button class="btn btn-sm btn-danger" onclick="doDeletePosition(${p.id})"${p.is_system?" disabled":""}>削除</button></div>`).join("");if(typeof Sortable!=="undefined"){Sortable.create(list,{animation:150,handle:".drag-handle",filter:".no-drag",onEnd:()=>{document.getElementById("reorder-save-area").style.display="block"}})}}catch(e){toast(e.message,"error")}}
-async function savePositionReorder(){const rows=[...document.querySelectorAll("#positions-list .positions-row")];const ids=rows.map(r=>parseInt(r.dataset.id));try{await api("PUT","/api/admin/positions/reorder",{ordered_ids:ids});toast("並び順を保存しました","success");loadPositions()}catch(e){toast(e.message,"error")}}
-function openAddPositionModal(){_editingPositionId=null;document.getElementById("pos-modal-title").textContent="役職を追加";document.getElementById("pos-modal-name").value="";const maxRank=_positions.length>0?Math.max(..._positions.map(p=>p.rank)):1;document.getElementById("pos-modal-rank").value=Math.max(maxRank+1,2);document.getElementById("pos-modal-rank-group").style.display="block";document.getElementById("pos-modal-err").style.display="none";document.getElementById("pos-modal-btn").textContent="追加";document.getElementById("pos-modal").classList.add("open")}
-function openEditPositionModal(id){const pos=_positions.find(p=>p.id===id);if(!pos)return;_editingPositionId=id;document.getElementById("pos-modal-title").textContent="役職を編集";document.getElementById("pos-modal-name").value=pos.name;document.getElementById("pos-modal-rank").value=pos.rank;document.getElementById("pos-modal-rank-group").style.display="block";document.getElementById("pos-modal-err").style.display="none";document.getElementById("pos-modal-btn").textContent="保存";document.getElementById("pos-modal").classList.add("open")}
+function copyTempPw(){const v=document.getElementById("pw-modal-value").textContent;navigator.clipboard.writeText(v).then(()=>toast(_t("pwCopied"),"success")).catch(()=>toast(_t("pwCopyFail"),"error"))}
+async function loadPositions(){try{const positions=await api("GET","/api/admin/positions");_positions=positions;const list=document.getElementById("positions-list");document.getElementById("reorder-save-area").style.display="none";list.innerHTML=positions.map(p=>{const actionBtns=p.is_system?"":
+`<button class="btn btn-sm btn-secondary" onclick="openEditPositionModal(${p.id})">${_t("editPos")}</button><button class="btn btn-sm btn-danger" onclick="doDeletePosition(${p.id})">${_t("deletePos")}</button>`;
+return`<div class="positions-row${p.is_system?" no-drag":""}" data-id="${p.id}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)">${p.is_system?'<span style="width:30px;display:inline-block"></span>':'<span class="drag-handle" style="cursor:grab;color:var(--txt2);font-size:18px;padding:0 6px;user-select:none">&#8801;</span>'}<span style="font-size:12px;color:var(--txt2);min-width:32px">${p.rank}${_t("rankSuffix")}</span><span style="flex:1;font-weight:600">${escHtml(p.name)}</span>${p.is_system?`<span style="font-size:11px;color:var(--txt2);padding:2px 6px;background:var(--sfc2);border-radius:4px">${_t("defaultTag")}</span>`:""}${actionBtns}</div>`}).join("");if(typeof Sortable!=="undefined"){Sortable.create(list,{animation:150,handle:".drag-handle",filter:".no-drag",onEnd:()=>{document.getElementById("reorder-save-area").style.display="block"}})}}catch(e){toast(e.message,"error")}}
+async function savePositionReorder(){const rows=[...document.querySelectorAll("#positions-list .positions-row")];const ids=rows.map(r=>parseInt(r.dataset.id));try{await api("PUT","/api/admin/positions/reorder",{ordered_ids:ids});toast(_t("orderSaved"),"success");loadPositions()}catch(e){toast(e.message,"error")}}
+function openAddPositionModal(){_editingPositionId=null;document.getElementById("pos-modal-title").textContent=_t("posAddTitle");document.getElementById("pos-modal-name").value="";const maxRank=_positions.length>0?Math.max(..._positions.map(p=>p.rank)):1;document.getElementById("pos-modal-rank").value=Math.max(maxRank+1,2);document.getElementById("pos-modal-rank-group").style.display="block";document.getElementById("pos-modal-err").style.display="none";document.getElementById("pos-modal-btn").textContent=_t("addBtn");document.getElementById("pos-modal").classList.add("open")}
+function openEditPositionModal(id){const pos=_positions.find(p=>p.id===id);if(!pos)return;_editingPositionId=id;document.getElementById("pos-modal-title").textContent=_t("posEditTitle");document.getElementById("pos-modal-name").value=pos.name;document.getElementById("pos-modal-rank").value=pos.rank;document.getElementById("pos-modal-rank-group").style.display="block";document.getElementById("pos-modal-err").style.display="none";document.getElementById("pos-modal-btn").textContent=_t("saveBtn");document.getElementById("pos-modal").classList.add("open")}
 function closePosModal(){document.getElementById("pos-modal").classList.remove("open")}
-async function submitPosModal(){const name=document.getElementById("pos-modal-name").value.trim(),rank=parseInt(document.getElementById("pos-modal-rank").value),err=document.getElementById("pos-modal-err");err.style.display="none";if(!name){err.textContent="役職名を入力してください";err.style.display="block";return}if(!rank||rank<2){err.textContent="順位は2以上を入力してください（1は管理者専用）";err.style.display="block";return}try{if(_editingPositionId){await api("PUT",`/api/admin/positions/${_editingPositionId}`,{name,rank});toast("役職を更新しました","success")}else{await api("POST","/api/admin/positions",{name,rank});toast("役職を追加しました","success")}closePosModal();loadPositions()}catch(e){err.textContent=e.message;err.style.display="block"}}
-async function doDeletePosition(pid){if(!confirm("この役職を削除しますか？"))return;try{await api("DELETE",`/api/admin/positions/${pid}`);toast("削除しました","success");loadPositions()}catch(e){toast(e.message,"error")}}
-async function loadSettings(){const el=document.getElementById("settings-list"),approvers=await api("GET","/api/approvers").catch(()=>[]);if(!approvers.length){el.innerHTML=`<div class="empty">承認者なし</div>`;return}el.innerHTML="";for(const a of approvers){const s=await api("GET",`/api/phase3/settings/${a.id}`).catch(()=>({auto_route_rules:{},notes:""}));const rules=s.auto_route_rules||{};const div=document.createElement("div");div.className="card";div.innerHTML=`<div class="card-title" style="margin-bottom:14px">${escHtml(a.name)} の設定</div><div style="margin-bottom:12px;font-size:13px;color:var(--txt2);font-weight:500">自動ルーティングする申請タイプ：</div>${["code_deploy","judge","consensus","notify"].map(k=>{const lb={code_deploy:"コード変更（code_deploy）",judge:"判断型",consensus:"合議型",notify:"通知型"};return`<label class="check-row"><input type="checkbox" data-uid="${a.id}" data-key="${k}" ${rules[k]?"checked":""}>${lb[k]}</label>`}).join("")}<div class="form-group" style="margin-top:12px"><label>メモ</label><textarea class="settings-notes" data-uid="${a.id}" rows="2">${escHtml(s.notes||"")}</textarea></div><button class="btn btn-primary btn-sm" onclick="saveSettings(${a.id},this)">保存</button>`;el.appendChild(div)}}
-async function saveSettings(uid,btn){const rules={};document.querySelectorAll(`input[type=checkbox][data-uid="${uid}"]`).forEach(cb=>{rules[cb.dataset.key]=cb.checked});const notes=document.querySelector(`.settings-notes[data-uid="${uid}"]`).value;try{await api("PUT",`/api/phase3/settings/${uid}`,{auto_route_rules:rules,notes});toast("設定を保存しました","success")}catch(e){toast(e.message,"error")}}
-function typeBadge(t){const lb={confirm:"確認型",notify:"通知型",judge:"判断型",consensus:"合議型"},cl={confirm:"badge-confirm",notify:"badge-notify",judge:"badge-judge",consensus:"badge-consensus"};return`<span class="badge ${cl[t]||""}}">${lb[t]||t}</span>`}
-function statusLabel(s){return{pending:"承認待ち",approved:"承認済み",rejected:"差し戻し",withdrawn:"取り下げ"}[s]||s}
+async function submitPosModal(){const name=document.getElementById("pos-modal-name").value.trim(),rank=parseInt(document.getElementById("pos-modal-rank").value),err=document.getElementById("pos-modal-err");err.style.display="none";if(!name){err.textContent=_t("posNameErr");err.style.display="block";return}if(!rank||rank<2){err.textContent=_t("posRankErr");err.style.display="block";return}try{if(_editingPositionId){await api("PUT",`/api/admin/positions/${_editingPositionId}`,{name,rank});toast(_t("posEdited"),"success")}else{await api("POST","/api/admin/positions",{name,rank});toast(_t("posAdded"),"success")}closePosModal();loadPositions()}catch(e){err.textContent=e.message;err.style.display="block"}}
+async function doDeletePosition(pid){if(!confirm(_t("confirmDeletePos")))return;try{await api("DELETE",`/api/admin/positions/${pid}`);toast(_t("posDeleted"),"success");loadPositions()}catch(e){toast(e.message,"error")}}
+async function loadSettings(){const el=document.getElementById("settings-list"),approvers=await api("GET","/api/approvers").catch(()=>[]);if(!approvers.length){el.innerHTML=`<div class="empty">${_t("noApprovers")}</div>`;return}el.innerHTML="";for(const a of approvers){const s=await api("GET",`/api/phase3/settings/${a.id}`).catch(()=>({auto_route_rules:{},notes:""}));const rules=s.auto_route_rules||{};const div=document.createElement("div");div.className="card";div.innerHTML=`<div class="card-title" style="margin-bottom:14px">${escHtml(a.name)} の設定</div><div style="margin-bottom:12px;font-size:13px;color:var(--txt2);font-weight:500">${_t("autoRoutingLabel")}</div>${["code_deploy","judge","consensus","notify"].map(k=>{const lb={code_deploy:_t("codeDeploy"),judge:_t("judgeType"),consensus:_t("consensusType"),notify:_t("notifyType")};return`<label class="check-row"><input type="checkbox" data-uid="${a.id}" data-key="${k}" ${rules[k]?"checked":""}>${lb[k]}</label>`}).join("")}<div class="form-group" style="margin-top:12px"><label>${_t("memoLabel")}</label><textarea class="settings-notes" data-uid="${a.id}" rows="2">${escHtml(s.notes||"")}</textarea></div><button class="btn btn-primary btn-sm" onclick="saveSettings(${a.id},this)">${_t("saveBtn")}</button>`;el.appendChild(div)}}
+async function saveSettings(uid,btn){const rules={};document.querySelectorAll(`input[type=checkbox][data-uid="${uid}"]`).forEach(cb=>{rules[cb.dataset.key]=cb.checked});const notes=document.querySelector(`.settings-notes[data-uid="${uid}"]`).value;try{await api("PUT",`/api/phase3/settings/${uid}`,{auto_route_rules:rules,notes});toast(_t("settingsSaved"),"success")}catch(e){toast(e.message,"error")}}
+function typeBadge(t){const lb={confirm:_t("typeConfirm"),notify:_t("typeNotify"),judge:_t("typeJudge"),consensus:_t("typeConsensus")},cl={confirm:"badge-confirm",notify:"badge-notify",judge:"badge-judge",consensus:"badge-consensus"};return`<span class="badge ${cl[t]||""}">${lb[t]||t}</span>`}
+function statusLabel(s){return{pending:_t("statusPending"),approved:_t("statusApproved"),rejected:_t("statusRejected"),withdrawn:_t("statusWithdrawn")}[s]||s}
 function relTime(ts){const d=(Date.now()-new Date(ts).getTime())/1000;if(d<60)return"たった今";if(d<3600)return`${Math.floor(d/60)}分前`;if(d<86400)return`${Math.floor(d/3600)}時間前`;return`${Math.floor(d/86400)}日前`}
 function fmtDate(ts){return ts?ts.replace("T"," ").substring(0,16):"—"}
 function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -369,8 +539,8 @@ function renderMarkdown(md){let h=escHtml(md);h=h.replace(/^## (.+)$/gm,"<h2>$1<
 function renderDiff(orig,newCode,targetId){if(!orig||!newCode){document.getElementById(targetId).textContent="差分データなし";return}const ol=orig.split("\n"),nl=newCode.split("\n"),ml=Math.max(ol.length,nl.length);let h="";for(let i=0;i<Math.min(ml,200);i++){const o=ol[i],n=nl[i];if(o===undefined)h+=`<div class="da">+ ${escHtml(n)}</div>`;else if(n===undefined)h+=`<div class="dd">- ${escHtml(o)}</div>`;else if(o!==n)h+=`<div class="dd">- ${escHtml(o)}</div><div class="da">+ ${escHtml(n)}</div>`;else h+=`<div class="dc">  ${escHtml(o)}</div>`}document.getElementById(targetId).innerHTML=h}
 function toast(msg,type=""){const el=document.getElementById("toast");el.textContent=msg;el.className="show "+type;setTimeout(()=>{el.className=""},3000)}
 function loadAccount(){["pw-current","pw-new","pw-new2"].forEach(id=>document.getElementById(id).value="");const e=document.getElementById("pw-change-err");e.style.display="none";e.textContent=""}
-function togglePwVis(id,btn){const el=document.getElementById(id);el.type=el.type==="password"?"text":"password";btn.textContent=el.type==="password"?"👁":"🙈"}
-async function doChangePassword(){const cur=document.getElementById("pw-current").value,nw=document.getElementById("pw-new").value,nw2=document.getElementById("pw-new2").value,err=document.getElementById("pw-change-err");err.style.display="none";if(nw!==nw2){err.textContent="新しいパスワードが一致しません";err.style.display="block";return}if(nw.length<8){err.textContent="8文字以上で入力してください";err.style.display="block";return}try{await api("POST","/api/me/password",{current_password:cur,new_password:nw});toast("パスワードを変更しました","success");loadAccount()}catch(e){err.textContent=e.message;err.style.display="block"}}
+function togglePwVis(id,btn){const el=document.getElementById(id);el.type=el.type==="password"?"text":"password";btn.textContent=el.type==="password"?_t("show"):_t("hide")}
+async function doChangePassword(){const cur=document.getElementById("pw-current").value,nw=document.getElementById("pw-new").value,nw2=document.getElementById("pw-new2").value,err=document.getElementById("pw-change-err");err.style.display="none";if(nw!==nw2){err.textContent=_t("pwMismatch");err.style.display="block";return}if(nw.length<8){err.textContent=_t("pwTooShort");err.style.display="block";return}try{await api("POST","/api/me/password",{current_password:cur,new_password:nw});toast(_t("pwChanged"),"success");loadAccount()}catch(e){err.textContent=e.message;err.style.display="block"}}
 </script>
 </body>
 </html>
