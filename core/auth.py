@@ -30,6 +30,12 @@ def _hash(pw: str) -> str:
 def init_db():
     with _conn() as c:
         c.executescript("""
+CREATE TABLE IF NOT EXISTS positions (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    name      TEXT UNIQUE NOT NULL,
+    rank      INTEGER NOT NULL,
+    is_system INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS users (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     name     TEXT NOT NULL,
@@ -80,20 +86,45 @@ CREATE TABLE IF NOT EXISTS approver_settings (
     notes             TEXT DEFAULT NULL
 );
 """)
+    # positions 初期データ（冪等）
+    with _conn() as c:
+        c.execute("INSERT OR IGNORE INTO positions (id,name,rank,is_system) VALUES (1,'管理者',1,1)")
+        c.execute("INSERT OR IGNORE INTO positions (id,name,rank,is_system) VALUES (2,'マネージャー',2,0)")
+        c.execute("INSERT OR IGNORE INTO positions (id,name,rank,is_system) VALUES (3,'一般',3,0)")
+    # users に position_id を追加（ADD COLUMN は IF NOT EXISTS 未サポート → try/except）
+    try:
+        with _conn() as c:
+            c.execute("ALTER TABLE users ADD COLUMN position_id INTEGER DEFAULT NULL")
+    except Exception:
+        pass
+    # 既存ユーザーの position_id を role から移行（NULL のもののみ）
+    with _conn() as c:
+        c.execute("UPDATE users SET position_id=1 WHERE role='admin'   AND position_id IS NULL")
+        c.execute("UPDATE users SET position_id=2 WHERE role='manager' AND position_id IS NULL")
+        c.execute("UPDATE users SET position_id=3 WHERE role='staff'   AND position_id IS NULL")
+    # 固定ユーザーのシード
+    _role_to_pid = {"admin": 1, "manager": 2, "staff": 3}
     with _conn() as c:
         for u in FIXED_USERS:
             exists = c.execute("SELECT 1 FROM users WHERE email=?", (u["email"],)).fetchone()
             if not exists:
                 ts = datetime.utcnow().isoformat()
+                pid = _role_to_pid.get(u["role"], 3)
                 c.execute(
-                    "INSERT INTO users (name,email,pw_hash,role,created) VALUES (?,?,?,?,?)",
-                    (u["name"], u["email"], _hash(u["password"]), u["role"], ts),
+                    "INSERT INTO users (name,email,pw_hash,role,created,position_id) VALUES (?,?,?,?,?,?)",
+                    (u["name"], u["email"], _hash(u["password"]), u["role"], ts, pid),
                 )
 
 
 def login(email: str, password: str):
     with _conn() as c:
-        row = c.execute("SELECT * FROM users WHERE email=? AND active=1", (email,)).fetchone()
+        row = c.execute(
+            """SELECT u.*, p.name AS position_name, p.rank AS position_rank
+               FROM users u
+               LEFT JOIN positions p ON u.position_id = p.id
+               WHERE u.email=? AND u.active=1""",
+            (email,),
+        ).fetchone()
     if row and row["pw_hash"] == _hash(password):
         return dict(row)
     return None
@@ -102,19 +133,36 @@ def login(email: str, password: str):
 def list_approvers():
     with _conn() as c:
         rows = c.execute(
-            "SELECT id, name, role FROM users WHERE role IN ('manager','admin') AND active=1"
+            """SELECT u.id, u.name, p.name AS role, p.rank AS position_rank
+               FROM users u
+               JOIN positions p ON u.position_id = p.id
+               WHERE p.rank < (SELECT MAX(rank) FROM positions)
+               AND u.active=1
+               ORDER BY p.rank, u.id"""
         ).fetchall()
     return [dict(r) for r in rows]
 
 
 def list_users():
     with _conn() as c:
-        return [dict(r) for r in c.execute("SELECT id,name,email,role,active,created FROM users ORDER BY id")]
+        rows = c.execute(
+            """SELECT u.id, u.name, u.email, u.role, u.active, u.created,
+                      u.position_id, p.name AS position_name, p.rank AS position_rank
+               FROM users u
+               LEFT JOIN positions p ON u.position_id = p.id
+               ORDER BY u.id"""
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def update_user_role(user_id: int, role: str):
     with _conn() as c:
         c.execute("UPDATE users SET role=? WHERE id=?", (role, user_id))
+
+
+def update_user_position(user_id: int, position_id: int):
+    with _conn() as c:
+        c.execute("UPDATE users SET position_id=? WHERE id=?", (position_id, user_id))
 
 
 def toggle_user_active(user_id: int, active: bool):
@@ -252,12 +300,17 @@ def get_phase3_stats(user_ids=None):
         if user_ids:
             ph = ",".join("?" * len(user_ids))
             approvers = c.execute(
-                f"SELECT id, name FROM users WHERE role IN ('manager','admin') AND id IN ({ph})",
+                f"""SELECT u.id, u.name FROM users u
+                    JOIN positions p ON u.position_id = p.id
+                    WHERE p.rank < (SELECT MAX(rank) FROM positions)
+                    AND u.id IN ({ph})""",
                 list(user_ids),
             ).fetchall()
         else:
             approvers = c.execute(
-                "SELECT id, name FROM users WHERE role IN ('manager','admin')"
+                """SELECT u.id, u.name FROM users u
+                   JOIN positions p ON u.position_id = p.id
+                   WHERE p.rank < (SELECT MAX(rank) FROM positions)"""
             ).fetchall()
         by_approver = []
         for a in approvers:
@@ -369,6 +422,84 @@ def get_cost_history(limit=50):
 
 def estimate_cost(input_tokens: int, output_tokens: int) -> float:
     return (input_tokens * 1.10 + output_tokens * 4.40) / 1_000_000
+
+
+# ── 役職管理 ──────────────────────────────────────────────────────────────
+
+def list_positions() -> list:
+    with _conn() as c:
+        rows = c.execute("SELECT * FROM positions ORDER BY rank").fetchall()
+    return [dict(r) for r in rows]
+
+
+def create_position(name: str, rank: int = None) -> int:
+    with _conn() as c:
+        if rank is None:
+            row = c.execute("SELECT COALESCE(MAX(rank), 0) FROM positions").fetchone()
+            rank = row[0] + 1
+        cur = c.execute(
+            "INSERT INTO positions (name, rank, is_system) VALUES (?, ?, 0)", (name, rank)
+        )
+        return cur.lastrowid
+
+
+def update_position_name(pid: int, name: str):
+    with _conn() as c:
+        c.execute("UPDATE positions SET name=? WHERE id=?", (name, pid))
+
+
+def reorder_positions(ordered_ids: list) -> None:
+    with _conn() as c:
+        for i, pid in enumerate(ordered_ids, 1):
+            c.execute("UPDATE positions SET rank=? WHERE id=?", (i, pid))
+
+
+def delete_position(pid: int):
+    with _conn() as c:
+        pos = c.execute("SELECT * FROM positions WHERE id=?", (pid,)).fetchone()
+        if not pos:
+            raise ValueError("役職が見つかりません")
+        if pos["is_system"]:
+            raise ValueError("システム既定の役職は削除できません")
+        user_count = c.execute(
+            "SELECT COUNT(*) FROM users WHERE position_id=?", (pid,)
+        ).fetchone()[0]
+        if user_count > 0:
+            raise ValueError("ユーザーが存在する役職は削除できません")
+        c.execute("DELETE FROM positions WHERE id=?", (pid,))
+
+
+# ── 可視性・権限ヘルパー ──────────────────────────────────────────────────
+
+def get_visible_user_ids(user_id: int) -> list:
+    """自分の rank 以上の rank を持つ全ユーザー ID を返す（自分含む）。
+    rank=1(admin)→全員, rank=2→rank>=2, rank=3→rank>=3"""
+    with _conn() as c:
+        row = c.execute(
+            "SELECT p.rank FROM users u JOIN positions p ON u.position_id=p.id WHERE u.id=?",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return [user_id]
+        rows = c.execute(
+            "SELECT u.id FROM users u JOIN positions p ON u.position_id=p.id WHERE p.rank >= ?",
+            (row["rank"],),
+        ).fetchall()
+    return [r["id"] for r in rows]
+
+
+def user_can_approve(user_id: int) -> bool:
+    """rank < max_rank なら承認者になれる（最低ランク以外）"""
+    with _conn() as c:
+        row = c.execute(
+            """SELECT p.rank, (SELECT MAX(rank) FROM positions) AS max_rank
+               FROM users u JOIN positions p ON u.position_id=p.id
+               WHERE u.id=?""",
+            (user_id,),
+        ).fetchone()
+    if not row:
+        return False
+    return row["rank"] < row["max_rank"]
 
 
 init_db()
