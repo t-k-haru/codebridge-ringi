@@ -443,13 +443,25 @@ def create_position(name: str, rank: int = None) -> int:
         return cur.lastrowid
 
 
-def update_position_name(pid: int, name: str):
+def update_position(pid: int, name: str, rank: int):
     with _conn() as c:
-        c.execute("UPDATE positions SET name=? WHERE id=?", (name, pid))
+        pos = c.execute("SELECT * FROM positions WHERE id=?", (pid,)).fetchone()
+        if not pos:
+            raise ValueError("役職が見つかりません")
+        if pos["is_system"]:
+            raise ValueError("システム既定の役職は変更できません")
+        if rank == 1:
+            raise ValueError("順位1は管理者専用です")
+        c.execute("UPDATE positions SET name=?, rank=? WHERE id=?", (name, rank, pid))
 
 
 def reorder_positions(ordered_ids: list) -> None:
     with _conn() as c:
+        admin_pos = c.execute(
+            "SELECT id FROM positions WHERE is_system=1 ORDER BY rank LIMIT 1"
+        ).fetchone()
+        if admin_pos and ordered_ids and ordered_ids[0] != admin_pos["id"]:
+            raise ValueError("管理者役職は常に先頭である必要があります")
         for i, pid in enumerate(ordered_ids, 1):
             c.execute("UPDATE positions SET rank=? WHERE id=?", (i, pid))
 

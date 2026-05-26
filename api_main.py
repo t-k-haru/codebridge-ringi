@@ -114,6 +114,7 @@ class PositionCreateReq(BaseModel):
 
 class PositionUpdateReq(BaseModel):
     name: str
+    rank: int
 
 class PositionsReorderReq(BaseModel):
     ordered_ids: list
@@ -309,6 +310,8 @@ def list_positions(user=Depends(require_admin())):
 
 @app.post("/api/admin/positions")
 def create_position(req: PositionCreateReq, user=Depends(require_admin())):
+    if req.rank is not None and req.rank == 1:
+        raise HTTPException(400, "順位1は管理者専用です")
     try:
         pid = auth.create_position(req.name, req.rank)
     except Exception as e:
@@ -320,15 +323,21 @@ def create_position(req: PositionCreateReq, user=Depends(require_admin())):
 # ⚠️ /reorder は /{pid} より先に定義すること（FastAPI のルート優先順）
 @app.put("/api/admin/positions/reorder")
 def reorder_positions(req: PositionsReorderReq, user=Depends(require_admin())):
-    auth.reorder_positions(req.ordered_ids)
+    try:
+        auth.reorder_positions(req.ordered_ids)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     auth.log_action(user["id"], user["name"], "reorder_positions", str(req.ordered_ids))
     return {"ok": True}
 
 
 @app.put("/api/admin/positions/{pid}")
 def update_position(pid: int, req: PositionUpdateReq, user=Depends(require_admin())):
-    auth.update_position_name(pid, req.name)
-    auth.log_action(user["id"], user["name"], "update_position_name", f"id={pid} name={req.name}")
+    try:
+        auth.update_position(pid, req.name, req.rank)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    auth.log_action(user["id"], user["name"], "update_position", f"id={pid} name={req.name} rank={req.rank}")
     return {"ok": True}
 
 
