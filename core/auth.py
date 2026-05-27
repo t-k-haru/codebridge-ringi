@@ -4,7 +4,7 @@ CodeBridge Ringi — 認証・ユーザー管理・稟議・アクティビテ�
 3アカウント固定。ユーザー追加機能なし。
 """
 import sqlite3, hashlib, json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "data" / "ringi.db"
@@ -102,6 +102,16 @@ CREATE TABLE IF NOT EXISTS approver_settings (
         c.execute("UPDATE users SET position_id=1 WHERE role='admin'   AND position_id IS NULL")
         c.execute("UPDATE users SET position_id=2 WHERE role='manager' AND position_id IS NULL")
         c.execute("UPDATE users SET position_id=3 WHERE role='staff'   AND position_id IS NULL")
+    # positions に role_type を追加
+    try:
+        with _conn() as c:
+            c.execute("ALTER TABLE positions ADD COLUMN role_type TEXT NOT NULL DEFAULT 'requester'")
+    except Exception:
+        pass
+    # 初期値を設定（冪等: 既に 'requester' 以外なら上書きしない）
+    with _conn() as c:
+        c.execute("UPDATE positions SET role_type='admin'    WHERE id=1 AND role_type='requester'")
+        c.execute("UPDATE positions SET role_type='engineer' WHERE id=2 AND role_type='requester'")
     # 固定ユーザーのシード
     _role_to_pid = {"admin": 1, "manager": 2, "staff": 3}
     with _conn() as c:
@@ -119,7 +129,7 @@ CREATE TABLE IF NOT EXISTS approver_settings (
 def login(email: str, password: str):
     with _conn() as c:
         row = c.execute(
-            """SELECT u.*, p.name AS position_name, p.rank AS position_rank
+            """SELECT u.*, p.name AS position_name, p.rank AS position_rank, p.role_type AS role_type
                FROM users u
                LEFT JOIN positions p ON u.position_id = p.id
                WHERE u.email=? AND u.active=1""",
@@ -461,18 +471,19 @@ def list_positions() -> list:
     return [dict(r) for r in rows]
 
 
-def create_position(name: str, rank: int = None) -> int:
+def create_position(name: str, rank: int = None, role_type: str = "requester") -> int:
     with _conn() as c:
         if rank is None:
             row = c.execute("SELECT COALESCE(MAX(rank), 0) FROM positions").fetchone()
             rank = row[0] + 1
         cur = c.execute(
-            "INSERT INTO positions (name, rank, is_system) VALUES (?, ?, 0)", (name, rank)
+            "INSERT INTO positions (name, rank, is_system, role_type) VALUES (?, ?, 0, ?)",
+            (name, rank, role_type)
         )
         return cur.lastrowid
 
 
-def update_position(pid: int, name: str, rank: int):
+def update_position(pid: int, name: str, rank: int, role_type: str = None):
     with _conn() as c:
         pos = c.execute("SELECT * FROM positions WHERE id=?", (pid,)).fetchone()
         if not pos:
@@ -481,7 +492,10 @@ def update_position(pid: int, name: str, rank: int):
             raise ValueError("システム既定の役職は変更できません")
         if rank == 1:
             raise ValueError("順位1は管理者専用です")
-        c.execute("UPDATE positions SET name=?, rank=? WHERE id=?", (name, rank, pid))
+        if role_type:
+            c.execute("UPDATE positions SET name=?, rank=?, role_type=? WHERE id=?", (name, rank, role_type, pid))
+        else:
+            c.execute("UPDATE positions SET name=?, rank=? WHERE id=?", (name, rank, pid))
 
 
 def reorder_positions(ordered_ids: list) -> None:
@@ -541,6 +555,99 @@ def user_can_approve(user_id: int) -> bool:
     if not row:
         return False
     return row["rank"] < row["max_rank"]
+
+
+def get_user_role_type(user_id: int) -> str:
+    """ユーザーの role_type ('admin'|'engineer'|'requester') を返す"""
+    with _conn() as c:
+        row = c.execute(
+            "SELECT p.role_type FROM users u JOIN positions p ON u.position_id=p.id WHERE u.id=?",
+            (user_id,),
+        ).fetchone()
+    return row["role_type"] if row else "requester"
+
+
+def is_engineer_or_above(user_id: int) -> bool:
+    return get_user_role_type(user_id) in ("admin", "engineer")
+
+
+def get_bottleneck_stats(user_ids: list = None) -> dict:
+    """ボトルネック分析: 遅い承認者・タイプ別所要時間・滞留申請を返す"""
+    cutoff_30d = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    cutoff_stall = (datetime.utcnow() - timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S")
+
+    with _conn() as c:
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = c.execute(
+                f"SELECT approver_id, approver_name, ts, resolved_at FROM requests "
+                f"WHERE status IN ('approved','rejected') AND ts >= ? AND approver_id IN ({ph})",
+                [cutoff_30d] + list(user_ids),
+            ).fetchall()
+        else:
+            rows = c.execute(
+                "SELECT approver_id, approver_name, ts, resolved_at FROM requests "
+                "WHERE status IN ('approved','rejected') AND ts >= ?",
+                (cutoff_30d,),
+            ).fetchall()
+
+        approver_times: dict = {}
+        for r in rows:
+            if r["ts"] and r["resolved_at"]:
+                try:
+                    h = (datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S") -
+                         datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600
+                    approver_times.setdefault(r["approver_id"], {"name": r["approver_name"], "times": []})
+                    approver_times[r["approver_id"]]["times"].append(h)
+                except Exception:
+                    pass
+
+        all_times = [t for v in approver_times.values() for t in v["times"]]
+        org_avg = (sum(all_times) / len(all_times)) if all_times else 0
+        slow_approvers = []
+        for uid, v in approver_times.items():
+            avg = sum(v["times"]) / len(v["times"])
+            if avg > org_avg:
+                slow_approvers.append({
+                    "approver_id": uid, "approver_name": v["name"],
+                    "avg_hours": round(avg, 1), "delta_hours": round(avg - org_avg, 1),
+                })
+        slow_approvers.sort(key=lambda x: x["delta_hours"], reverse=True)
+
+        type_rows = c.execute(
+            "SELECT approval_type, ts, resolved_at FROM requests WHERE status='approved' AND ts >= ?",
+            (cutoff_30d,),
+        ).fetchall()
+        type_times: dict = {}
+        for r in type_rows:
+            if r["ts"] and r["resolved_at"]:
+                try:
+                    h = (datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S") -
+                         datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600
+                    type_times.setdefault(r["approval_type"], []).append(h)
+                except Exception:
+                    pass
+        slow_types = sorted(
+            [{"type": k, "avg_hours": round(sum(v) / len(v), 1)} for k, v in type_times.items()],
+            key=lambda x: x["avg_hours"], reverse=True,
+        )
+
+        stalled_rows = c.execute(
+            "SELECT id, draft_title, requester_name, ts FROM requests WHERE status='pending' AND ts < ?",
+            (cutoff_stall,),
+        ).fetchall()
+        stalled = []
+        for r in stalled_rows:
+            try:
+                days = (datetime.utcnow() - datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")).days
+                stalled.append({
+                    "id": r["id"], "title": r["draft_title"] or "",
+                    "requester_name": r["requester_name"], "days_pending": days,
+                })
+            except Exception:
+                pass
+
+    return {"slow_approvers": slow_approvers, "slow_types": slow_types, "stalled": stalled}
 
 
 init_db()

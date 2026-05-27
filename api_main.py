@@ -73,6 +73,14 @@ def require_approver():
     return dep
 
 
+def require_engineer_or_above():
+    def dep(user=Depends(get_current_user)):
+        if not auth.is_engineer_or_above(user["id"]):
+            raise HTTPException(403, "Forbidden")
+        return user
+    return dep
+
+
 class LoginReq(BaseModel):
     email: str
     password: str
@@ -111,10 +119,12 @@ class ChangePasswordReq(BaseModel):
 class PositionCreateReq(BaseModel):
     name: str
     rank: Optional[int] = None
+    role_type: str = "requester"
 
 class PositionUpdateReq(BaseModel):
     name: str
     rank: int
+    role_type: str = "requester"
 
 class PositionsReorderReq(BaseModel):
     ordered_ids: list
@@ -135,6 +145,7 @@ def login(req: LoginReq):
         "email": user["email"], "role": user["role"],
         "position_rank": user.get("position_rank"),
         "position_name": user.get("position_name"),
+        "role_type": user.get("role_type", "requester"),
         "can_approve": auth.user_can_approve(user["id"]),
     }}
 
@@ -239,7 +250,7 @@ def get_request(request_id: int, user=Depends(get_current_user)):
 
 
 @app.post("/api/requests/{request_id}/approve")
-def approve(request_id: int, req: ResolveReq, user=Depends(require_approver())):
+def approve(request_id: int, req: ResolveReq, user=Depends(require_engineer_or_above())):
     ringi = auth.get_request(request_id)
     if not ringi:
         raise HTTPException(404, "Not found")
@@ -255,7 +266,7 @@ def approve(request_id: int, req: ResolveReq, user=Depends(require_approver())):
 
 
 @app.post("/api/requests/{request_id}/reject")
-def reject(request_id: int, req: ResolveReq, user=Depends(require_approver())):
+def reject(request_id: int, req: ResolveReq, user=Depends(require_engineer_or_above())):
     ringi = auth.get_request(request_id)
     if not ringi:
         raise HTTPException(404, "Not found")
@@ -272,7 +283,7 @@ def reject(request_id: int, req: ResolveReq, user=Depends(require_approver())):
 
 
 @app.post("/api/requests/{request_id}/regenerate")
-def regenerate(request_id: int, req: ResolveReq, user=Depends(require_approver())):
+def regenerate(request_id: int, req: ResolveReq, user=Depends(require_engineer_or_above())):
     ringi = auth.get_request(request_id)
     if not ringi:
         raise HTTPException(404, "Not found")
@@ -332,6 +343,12 @@ def phase3_stats(user=Depends(get_current_user)):
     return auth.get_phase3_stats(user_ids=ids)
 
 
+@app.get("/api/phase3/bottleneck")
+def phase3_bottleneck(user=Depends(require_engineer_or_above())):
+    ids = auth.get_visible_user_ids(user["id"])
+    return auth.get_bottleneck_stats(user_ids=ids)
+
+
 @app.get("/api/phase3/approver/{uid}")
 def approver_stats(uid: int, user=Depends(get_current_user)):
     allowed = auth.get_visible_user_ids(user["id"])
@@ -355,7 +372,7 @@ def create_position(req: PositionCreateReq, user=Depends(require_admin())):
     if req.rank is not None and req.rank == 1:
         raise HTTPException(400, "順位1は管理者専用です")
     try:
-        pid = auth.create_position(req.name, req.rank)
+        pid = auth.create_position(req.name, req.rank, req.role_type)
     except Exception as e:
         raise HTTPException(400, str(e))
     auth.log_action(user["id"], user["name"], "create_position", f"name={req.name}")
@@ -376,7 +393,7 @@ def reorder_positions(req: PositionsReorderReq, user=Depends(require_admin())):
 @app.put("/api/admin/positions/{pid}")
 def update_position(pid: int, req: PositionUpdateReq, user=Depends(require_admin())):
     try:
-        auth.update_position(pid, req.name, req.rank)
+        auth.update_position(pid, req.name, req.rank, req.role_type)
     except ValueError as e:
         raise HTTPException(400, str(e))
     auth.log_action(user["id"], user["name"], "update_position", f"id={pid} name={req.name} rank={req.rank}")
@@ -472,7 +489,7 @@ def get_logs_csv(user=Depends(require_admin())):
 
 
 @app.get("/api/cost")
-def get_cost(user=Depends(require_admin())):
+def get_cost(user=Depends(require_engineer_or_above())):
     return {"monthly": auth.get_monthly_cost(), "history": auth.get_cost_history(30)}
 
 
