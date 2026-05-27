@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -271,6 +271,48 @@ def reject(request_id: int, req: ResolveReq, user=Depends(require_approver())):
     return {"ok": True}
 
 
+@app.post("/api/requests/{request_id}/regenerate")
+def regenerate(request_id: int, req: ResolveReq, user=Depends(require_approver())):
+    ringi = auth.get_request(request_id)
+    if not ringi:
+        raise HTTPException(404, "Not found")
+    if ringi["approver_id"] != user["id"]:
+        raise HTTPException(403, "この申請の承認者ではありません")
+    if ringi["status"] != "pending":
+        raise HTTPException(400, "既に処理済みです")
+    if not req.comment:
+        raise HTTPException(400, "再生成にはコメント（指示）が必要です")
+    if ringi.get("extension_type") != "code_deploy":
+        raise HTTPException(400, "コード変更申請のみ再生成可能です")
+
+    # 元の申請内容 + フィードバックで再パイプライン
+    full_instruction = ringi["raw_input"] + f"\n\n[修正指示]\n{req.comment}"
+    try:
+        result = run_pipeline(full_instruction)
+    except Exception as e:
+        raise HTTPException(500, f"再生成に失敗しました: {e}")
+
+    old_ext = ringi.get("extension_data")
+    if isinstance(old_ext, str):
+        try:
+            old_ext = json.loads(old_ext)
+        except Exception:
+            old_ext = {}
+    old_ext = old_ext or {}
+    new_ext = {
+        "original_code": result.original_code,
+        "new_code": result.new_code,
+        "changed_lines": result.changed_lines,
+        "diff_summary": result.report,
+        "auto_deploy": old_ext.get("auto_deploy", True),
+    }
+    auth.update_request_extension_data(request_id, new_ext, regen_comment=req.comment)
+    auth.log_action(user["id"], user["name"], "regenerate",
+                    f"request_id={request_id} comment={req.comment[:50]}", result.cost_usd)
+    auth.log_cost(user["id"], req.comment, result.input_tokens, result.output_tokens, result.cost_usd)
+    return {"ok": True, "changed_lines": result.changed_lines, "cost_usd": result.cost_usd}
+
+
 def _execute_extension(ringi: dict):
     if ringi.get("extension_type") == "code_deploy" and ringi.get("extension_data"):
         try:
@@ -418,6 +460,15 @@ def update_settings(uid: int, req: ApproverSettingsReq, user=Depends(require_adm
 @app.get("/api/logs")
 def get_logs(user=Depends(require_admin())):
     return auth.get_activity_log(500)
+
+
+@app.get("/api/logs/csv")
+def get_logs_csv(user=Depends(require_admin())):
+    csv = auth.log_to_csv()
+    return Response(
+        content=csv, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=activity_log.csv"},
+    )
 
 
 @app.get("/api/cost")

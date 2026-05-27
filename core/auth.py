@@ -243,6 +243,26 @@ def resolve_request(request_id, status, comment=None):
         )
 
 
+def update_request_extension_data(request_id: int, new_ext: dict, regen_comment: str = None):
+    """extension_data を上書きし、再生成履歴を approver_comment に追記する（status は変更しない）"""
+    with _conn() as c:
+        if regen_comment:
+            ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            row = c.execute("SELECT approver_comment FROM requests WHERE id=?", (request_id,)).fetchone()
+            prev = (row["approver_comment"] or "").strip() if row else ""
+            entry = f"[{ts}] 再生成指示: {regen_comment}"
+            new_comment = f"{prev}\n{entry}" if prev else entry
+            c.execute(
+                "UPDATE requests SET extension_data=?, approver_comment=? WHERE id=?",
+                (json.dumps(new_ext), new_comment, request_id),
+            )
+        else:
+            c.execute(
+                "UPDATE requests SET extension_data=? WHERE id=?",
+                (json.dumps(new_ext), request_id),
+            )
+
+
 def get_approver_settings(user_id):
     with _conn() as c:
         row = c.execute("SELECT * FROM approver_settings WHERE user_id=?", (user_id,)).fetchone()
@@ -391,6 +411,15 @@ def get_activity_log(limit=200):
             "SELECT * FROM activity_log ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def log_to_csv() -> str:
+    rows = get_activity_log(10000)
+    lines = ["id,timestamp,user,action,detail,cost_usd"]
+    for r in rows:
+        detail = str(r.get("detail", "")).replace(",", "，").replace("\n", " ")
+        lines.append(f"{r['id']},{r['ts']},{r['user_name']},{r['action']},{detail},{r['cost_usd']:.6f}")
+    return "\n".join(lines)
 
 
 def log_cost(user_id, request_text, input_tokens, output_tokens, cost_usd):
