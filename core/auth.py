@@ -15,6 +15,12 @@ FIXED_USERS = [
     {"name": "佐藤 一郎", "email": "staff@codebridge.ai",   "password": "Staff1234!",   "role": "staff"},
 ]
 
+# 自動化候補の判定パラメータ
+AUTOMATION_WINDOW_DAYS = 90
+AUTOMATION_MIN_SAMPLE = 3
+AUTOMATION_AUTO_APPROVE_RATE = 0.90
+AUTOMATION_NOTIFY_RATE = 0.75
+
 
 def _conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -325,6 +331,8 @@ def get_phase3_stats(user_ids=None):
             return f"{base_sql} AND requester_id IN ({ph})", params + list(user_ids)
         return base_sql, params
 
+    cutoff = (datetime.utcnow() - timedelta(days=AUTOMATION_WINDOW_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+
     with _conn() as c:
         # user_ids が指定された場合は承認者リストも同じ範囲に絞る
         if user_ids:
@@ -369,27 +377,80 @@ def get_phase3_stats(user_ids=None):
                 "total": total,
                 "approved": approved,
             })
+
+        # by_type: 90日フィルター + 件数追加
         type_sql, type_params = _req_filter(
-            "SELECT approval_type, ts, resolved_at FROM requests WHERE status='approved'", []
+            "SELECT approval_type, ts, resolved_at FROM requests WHERE status='approved' AND ts >= ?",
+            [cutoff],
         )
         type_rows = c.execute(type_sql, type_params).fetchall()
+
+        # automation_candidates: 全ステータスの申請を集計
         auto_sql, auto_params = _req_filter(
-            "SELECT COUNT(*) FROM requests WHERE approval_type='confirm' AND status='approved'", []
+            "SELECT approval_type, status, ts, resolved_at FROM requests WHERE ts >= ?",
+            [cutoff],
         )
-        automation_count = c.execute(auto_sql, auto_params).fetchone()[0]
-    type_stats: dict = {}
+        auto_rows = c.execute(auto_sql, auto_params).fetchall()
+
+    # by_type 集計
+    type_data: dict = {}
     for r in type_rows:
         t = r["approval_type"]
         if r["resolved_at"] and r["ts"]:
             try:
-                t1 = datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")
-                t2 = datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S")
-                hours = (t2 - t1).total_seconds() / 3600
-                type_stats.setdefault(t, []).append(hours)
+                h = (datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S") -
+                     datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600
+                type_data.setdefault(t, []).append(h)
             except Exception:
                 pass
-    type_avg = {k: round(sum(v) / len(v), 1) for k, v in type_stats.items()}
-    return {"by_approver": by_approver, "by_type": type_avg, "automation_candidates": automation_count}
+    by_type = sorted(
+        [{"type": k, "count": len(v), "avg_hours": round(sum(v) / len(v), 1)}
+         for k, v in type_data.items()],
+        key=lambda x: x["avg_hours"], reverse=True,
+    )
+
+    # automation_candidates 集計
+    auto_data: dict = {}
+    for r in auto_rows:
+        t = r["approval_type"]
+        auto_data.setdefault(t, {"total": 0, "approved": 0, "rejected": 0, "times": []})
+        auto_data[t]["total"] += 1
+        if r["status"] == "approved":
+            auto_data[t]["approved"] += 1
+            if r["resolved_at"] and r["ts"]:
+                try:
+                    h = (datetime.strptime(r["resolved_at"], "%Y-%m-%d %H:%M:%S") -
+                         datetime.strptime(r["ts"], "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600
+                    auto_data[t]["times"].append(h)
+                except Exception:
+                    pass
+        elif r["status"] == "rejected":
+            auto_data[t]["rejected"] += 1
+
+    automation_candidates = []
+    for t, d in auto_data.items():
+        total = d["total"]
+        if total < AUTOMATION_MIN_SAMPLE:
+            continue
+        rate = d["approved"] / total
+        if rate < AUTOMATION_NOTIFY_RATE:
+            continue
+        avg_h = round(sum(d["times"]) / len(d["times"]), 1) if d["times"] else 0
+        monthly = round(total / (AUTOMATION_WINDOW_DAYS / 30), 1)
+        automation_candidates.append({
+            "type": t,
+            "total": total,
+            "approved": d["approved"],
+            "rejected": d["rejected"],
+            "approval_rate": round(rate, 3),
+            "avg_hours": avg_h,
+            "monthly_count": monthly,
+            "time_saved_hours_per_month": round(monthly * avg_h, 1),
+            "recommendation": "auto_approve" if rate >= AUTOMATION_AUTO_APPROVE_RATE else "notify_and_confirm",
+        })
+    automation_candidates.sort(key=lambda x: x["time_saved_hours_per_month"], reverse=True)
+
+    return {"by_approver": by_approver, "by_type": by_type, "automation_candidates": automation_candidates}
 
 
 def get_approver_detail_stats(user_id):

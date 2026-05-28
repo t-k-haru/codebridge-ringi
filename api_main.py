@@ -340,7 +340,10 @@ def _execute_extension(ringi: dict):
 @app.get("/api/phase3/stats")
 def phase3_stats(user=Depends(get_current_user)):
     ids = auth.get_visible_user_ids(user["id"])
-    return auth.get_phase3_stats(user_ids=ids)
+    result = auth.get_phase3_stats(user_ids=ids)
+    if not auth.is_engineer_or_above(user["id"]):
+        result["automation_candidates"] = None
+    return result
 
 
 @app.get("/api/phase3/bottleneck")
