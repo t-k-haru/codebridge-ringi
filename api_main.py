@@ -2,9 +2,11 @@
 """
 CodeBridge Ringi — FastAPI バックエンド
 """
-import os, secrets, json
+import os, secrets, json, logging, traceback
 from datetime import datetime
 from typing import Optional
+
+logger = logging.getLogger("ringi")
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -180,36 +182,42 @@ def change_my_password(req: ChangePasswordReq, user=Depends(get_current_user)):
 
 @app.post("/api/requests/analyze")
 def analyze(req: AnalyzeReq, user=Depends(get_current_user)):
-    approvers = auth.list_approvers()
-    draft = analyze_request(req.raw_input, user["name"], approvers)
-    extension_data = None
-    if draft.extension_type == "code_deploy":
-        try:
-            pipeline_result = run_pipeline(req.raw_input)
-            extension_data = {
-                "original_code": pipeline_result.original_code,
-                "new_code": pipeline_result.new_code,
-                "changed_lines": pipeline_result.changed_lines,
-                "diff_summary": pipeline_result.report,
-                "auto_deploy": True,
-            }
-        except Exception as e:
-            extension_data = {"error": str(e), "auto_deploy": False}
-    auth.log_action(user["id"], user["name"], "analyze", req.raw_input[:100], draft.cost_usd)
-    auth.log_cost(user["id"], req.raw_input, draft.input_tokens, draft.output_tokens, draft.cost_usd)
-    return {
-        "approval_type": draft.approval_type,
-        "draft_title": draft.draft_title,
-        "draft_body": draft.draft_body,
-        "suggested_approver_id": draft.suggested_approver_id,
-        "suggested_approver_name": draft.suggested_approver_name,
-        "suggested_approver_reason": draft.suggested_approver_reason,
-        "extension_type": draft.extension_type,
-        "extension_data": extension_data,
-        "risk_level": draft.risk_level,
-        "key_points": draft.key_points,
-        "cost_usd": draft.cost_usd,
-    }
+    try:
+        approvers = auth.list_approvers()
+        draft = analyze_request(req.raw_input, user["name"], approvers)
+        extension_data = None
+        if draft.extension_type == "code_deploy":
+            try:
+                pipeline_result = run_pipeline(req.raw_input)
+                extension_data = {
+                    "original_code": pipeline_result.original_code,
+                    "new_code": pipeline_result.new_code,
+                    "changed_lines": pipeline_result.changed_lines,
+                    "diff_summary": pipeline_result.report,
+                    "auto_deploy": True,
+                }
+            except Exception as e:
+                extension_data = {"error": str(e), "auto_deploy": False}
+        auth.log_action(user["id"], user["name"], "analyze", req.raw_input[:100], draft.cost_usd)
+        auth.log_cost(user["id"], req.raw_input, draft.input_tokens, draft.output_tokens, draft.cost_usd)
+        return {
+            "approval_type": draft.approval_type,
+            "draft_title": draft.draft_title,
+            "draft_body": draft.draft_body,
+            "suggested_approver_id": draft.suggested_approver_id,
+            "suggested_approver_name": draft.suggested_approver_name,
+            "suggested_approver_reason": draft.suggested_approver_reason,
+            "extension_type": draft.extension_type,
+            "extension_data": extension_data,
+            "risk_level": draft.risk_level,
+            "key_points": draft.key_points,
+            "cost_usd": draft.cost_usd,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("analyze failed:\n%s", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"analyze error: {type(e).__name__}: {str(e)[:300]}")
 
 
 @app.post("/api/requests/submit")
@@ -499,6 +507,35 @@ def get_cost(user=Depends(require_engineer_or_above())):
 @app.get("/api/approvers")
 def get_approvers(user=Depends(get_current_user)):
     return auth.list_approvers()
+
+
+@app.get("/api/diag")
+def diag(user=Depends(require_admin())):
+    """診断エンドポイント（admin 限定）。環境変数の有無と Azure OpenAI 疎通を確認する。値は返さない。"""
+    from pathlib import Path
+    info = {
+        "env": {
+            "AZURE_OPENAI_ENDPOINT":   bool(os.getenv("AZURE_OPENAI_ENDPOINT")),
+            "AZURE_OPENAI_API_KEY":    bool(os.getenv("AZURE_OPENAI_API_KEY")),
+            "AZURE_OPENAI_DEPLOYMENT": os.getenv("AZURE_OPENAI_DEPLOYMENT", "(default:o4-mini)"),
+        },
+        "target_app_exists": Path("target_app/demo_local.html").exists(),
+        "openai_package": False,
+        "openai_ping": None,
+    }
+    try:
+        import openai  # noqa
+        info["openai_package"] = True
+    except Exception as e:
+        info["openai_ping"] = f"import failed: {type(e).__name__}"
+        return info
+    try:
+        from core.azure_client import _call
+        _call([{"role": "user", "content": "ping"}], max_tokens=5)
+        info["openai_ping"] = "ok"
+    except Exception as e:
+        info["openai_ping"] = f"{type(e).__name__}: {str(e)[:200]}"
+    return info
 
 
 @app.get("/api/health")
