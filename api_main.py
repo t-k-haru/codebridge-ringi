@@ -510,31 +510,42 @@ def get_approvers(user=Depends(get_current_user)):
 
 
 @app.get("/api/diag")
-def diag(user=Depends(require_admin())):
-    """診断エンドポイント（admin 限定）。環境変数の有無と Azure OpenAI 疎通を確認する。値は返さない。"""
+def diag():
+    """診断エンドポイント（一時認証解除）。接続エラー詳細切り分け用。原因特定後に認証・詳細露出を元に戻す。"""
     from pathlib import Path
+    from urllib.parse import urlparse
+
+    raw_ep = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+    resolved = raw_ep.split("/api/projects/")[0] + "/" if "/api/projects/" in raw_ep else raw_ep
+    host = urlparse(resolved).hostname or "(parse failed)"
+
     info = {
         "env": {
-            "AZURE_OPENAI_ENDPOINT":   bool(os.getenv("AZURE_OPENAI_ENDPOINT")),
+            "AZURE_OPENAI_ENDPOINT":   bool(raw_ep),
             "AZURE_OPENAI_API_KEY":    bool(os.getenv("AZURE_OPENAI_API_KEY")),
             "AZURE_OPENAI_DEPLOYMENT": os.getenv("AZURE_OPENAI_DEPLOYMENT", "(default:o4-mini)"),
         },
+        "endpoint_host": host,
+        "endpoint_has_projects_path": "/api/projects/" in raw_ep,
         "target_app_exists": Path("target_app/demo_local.html").exists(),
         "openai_package": False,
-        "openai_ping": None,
+        "ping_status": None,
+        "ping_detail": None,
     }
     try:
         import openai  # noqa
         info["openai_package"] = True
     except Exception as e:
-        info["openai_ping"] = f"import failed: {type(e).__name__}"
+        info["ping_detail"] = f"import failed: {type(e).__name__}"
         return info
     try:
         from core.azure_client import _call
         _call([{"role": "user", "content": "ping"}], max_tokens=5)
-        info["openai_ping"] = "ok"
+        info["ping_status"] = "ok"
     except Exception as e:
-        info["openai_ping"] = f"{type(e).__name__}: {str(e)[:200]}"
+        cause = getattr(e, "__cause__", None)
+        info["ping_status"] = type(e).__name__
+        info["ping_detail"] = f"{type(e).__name__}: {str(e)[:150]} | cause={repr(cause)[:200]}"
     return info
 
 
