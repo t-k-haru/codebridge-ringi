@@ -17,7 +17,7 @@
 - **バックエンド**: FastAPI（`api_main.py`）+ SQLite（`core/auth.py` で管理）
 - **AI**: Azure OpenAI o4-mini（`core/ringi_orchestrator.py`）
 - **フロントエンド**: シングルページ HTML（`frontend/index.html`）、ダークテーマ
-- **認証**: JWT不使用、インメモリセッション（`_sessions` dict）
+- **認証**: JWT（PyJWT / HS256）、有効期限24時間、ステートレス
 - **起動コマンド**: `uvicorn api_main:app --host 0.0.0.0 --port 8000 --workers 1 --timeout-keep-alive 300`
 
 ## ファイル構成
@@ -62,9 +62,12 @@ AZURE_OPENAI_API_KEY=...
 AZURE_OPENAI_ENDPOINT=...
 AZURE_OPENAI_DEPLOYMENT=o4-mini
 ALLOWED_ORIGINS=*
+JWT_SECRET=（任意の長いランダム文字列。未設定なら起動ごとにランダム生成→再起動でセッション無効化）
 ```
 
 GitHub Secrets に `AZURE_CREDENTIALS`（Azure Service Principal JSON）が設定済み。
+
+> **⚠️ 本番運用**: Azure App Service の「環境変数」に `JWT_SECRET` を設定することで、再起動後もログイン状態が維持される。未設定の場合、アプリ再起動のたびに全ユーザーが再ログイン必要になる。
 
 ## 稟議の承認タイプ
 

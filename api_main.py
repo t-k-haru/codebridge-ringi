@@ -3,8 +3,9 @@
 CodeBridge Ringi — FastAPI バックエンド
 """
 import os, secrets, json, logging, traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
+import jwt
 
 logger = logging.getLogger("ringi")
 
@@ -33,22 +34,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_sessions: dict[str, dict] = {}
+# JWT 設定（未設定なら起動時ランダム生成。本番は環境変数 JWT_SECRET を設定推奨）
+_JWT_SECRET = os.getenv("JWT_SECRET") or secrets.token_hex(32)
+_JWT_ALGORITHM = "HS256"
+_JWT_EXPIRE_HOURS = 24
 
 
 def _make_token(user: dict) -> str:
-    tok = secrets.token_hex(32)
-    _sessions[tok] = user
-    return tok
+    payload = {
+        "sub": str(user["id"]),
+        "exp": datetime.utcnow() + timedelta(hours=_JWT_EXPIRE_HOURS),
+        "iat": datetime.utcnow(),
+        "u": {
+            "id": user["id"],
+            "name": user["name"],
+            "email": user["email"],
+            "role": user["role"],
+            "position_rank": user.get("position_rank"),
+            "position_name": user.get("position_name"),
+            "role_type": user.get("role_type", "requester"),
+        },
+    }
+    return jwt.encode(payload, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "Unauthorized")
-    user = _sessions.get(authorization.split(" ", 1)[1])
-    if not user:
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
+        return payload["u"]
+    except jwt.ExpiredSignatureError:
         raise HTTPException(401, "Session expired")
-    return user
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Invalid token")
 
 
 def require_roles(*roles):
@@ -153,9 +173,8 @@ def login(req: LoginReq):
 
 
 @app.post("/api/logout")
-def logout(authorization: Optional[str] = Header(None)):
-    if authorization and authorization.startswith("Bearer "):
-        _sessions.pop(authorization.split(" ", 1)[1], None)
+def logout():
+    # JWT はステートレス。クライアント側でトークンを破棄すれば有効期限まで自然失効
     return {"ok": True}
 
 
@@ -510,8 +529,8 @@ def get_approvers(user=Depends(get_current_user)):
 
 
 @app.get("/api/diag")
-def diag():
-    """診断エンドポイント（一時認証解除）。接続エラー詳細切り分け用。原因特定後に認証・詳細露出を元に戻す。"""
+def diag(user=Depends(require_admin())):
+    """診断エンドポイント（admin 限定）。環境変数の有無と Azure OpenAI 疎通を確認する。値は返さない。"""
     from pathlib import Path
     from urllib.parse import urlparse
 
@@ -543,9 +562,8 @@ def diag():
         _call([{"role": "user", "content": "ping"}], max_tokens=5)
         info["ping_status"] = "ok"
     except Exception as e:
-        cause = getattr(e, "__cause__", None)
         info["ping_status"] = type(e).__name__
-        info["ping_detail"] = f"{type(e).__name__}: {str(e)[:150]} | cause={repr(cause)[:200]}"
+        info["ping_detail"] = type(e).__name__
     return info
 
 

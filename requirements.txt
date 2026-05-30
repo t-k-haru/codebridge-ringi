@@ -4,3 +4,4 @@ python-multipart==0.0.17
 openai==1.75.0
 python-dotenv==1.0.1
 flask==3.1.0
+PyJWT==2.9.0
