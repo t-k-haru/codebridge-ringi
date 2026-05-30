@@ -7,7 +7,7 @@ from core.azure_client import (
 )
 from core.sandbox import execute_code, read_target_code
 
-MAX_DEBUG = 3
+MAX_DEBUG = 10
 
 @dataclass
 class TaskResult:
